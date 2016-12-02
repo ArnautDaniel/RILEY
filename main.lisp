@@ -170,13 +170,16 @@
 		    :href "css/corrections.css"))
 	    (:body
 	     
-		  ,@body))))
+	     ,@body))))
+
 (define-easy-handler (home :uri "/") ()
   (standard-page (:title "RILEY Inventory System")
     (:a :href "/createshow" "Create Show")))
+
 (define-easy-handler (orc :uri "/orc") ()
   (standard-page (:title "WHEW LAD")
     (:h1 "If you got here you can stop for tonight.")))
+
 (define-easy-handler (check-login :uri "/check-login") ()
   (let
       ((username (hunchentoot:post-parameter "username"))
@@ -224,6 +227,7 @@
 			    :password (cl-pass:hash password))
 	     (redirect "/"))
 	(redirect "/fail"))))
+
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
     (:div :id "landing"
