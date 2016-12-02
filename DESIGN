@@ -1,0 +1,101 @@
+Abstract:
+
+Create an inventory system that allows for synchronization between users.
+
+Two systems are in mind.
+
+One is for the users, they will have a dashboard which congregates all the useful info.  They will be able to link themselves to orders, be able to post about orders or alert another user to an order. Messaging between users would be great.
+
+Two is the inventory system.  It will catogorize invoice objects into relevant data and organize it.  It must be searchable and decently fast.  Most of the data on the website will be taken from the database.  Can start off using cl-conspack since it shouldn't affect much til then.
+
+Implementation:
+
+One user will be the root user who can access all orders with full permissions.  Examples include
+    - Committing an order as completed
+    - Assigning orders to users
+    - Assigning batches of pictures that need to be written up
+    - Reviewing orders that have been checked in
+    - Printing
+Non-root users will be able to:
+
+    - Search the database for all order information
+    - Receive requests to write orders
+    - Check in orders
+    - Messaging other users
+    - Printing
+    
+Steps that need to be accomplished:
+
+    - Get users and user datastructures defined
+    - Write a homepage and work towards a dashboard
+    - Get invoices and item data structures defined
+    - Try to abstract latex generation
+    - Work on getting an Iframe for checking pdf's without leaving the page
+    - Work on dynamic pages for typing up orders
+
+Data Structures for invoices:
+
+     show (object)
+     	  contact-name -> string
+	  phone-number -> string
+	  order-amount -> int
+	  list-of-invoices -> listof invoice objects
+	  name -> string
+	  
+
+     invoice (object)
+     	     id-number -> int
+	     set-name -> string
+	     date-out -> int
+	     show-name -> string
+	     contact-name -> string
+	     check-in-accounting -> listof check-in objects
+	     item-list -> listof item objects
+	     pdf-location -> pathname pdf
+	     
+
+     check-in (object)
+     	      date -> int
+	      invoice-refer -> invoice (object)
+	      checked-by -> string
+	      show-name -> show (object)
+	      checks -> listof item objects
+
+     item (object)
+	     price -> int
+	     quantity -> int
+	     description -> string
+	     invoices-on -> listof invoice names/ids
+	     shows-on -> listof show names/ids
+
+     user (object)
+	     name -> string
+	     rank -> or/c root user
+	     shows-checked -> listof show names/ids
+	     invoice-history -> listof invoice names/ids
+	     points -> int
+	     messages -> listof message objects
+	     status -> string
+
+
+     message (object)
+     	     sender -> user name
+	     recipient -> listof user names
+	     date -> int
+	     content -> string
+	     reply -> message (object)
+	     read -> boolean
+	     read-on -> int
+	     private -> boolean
+	     connect-to-show-or-invoice -> boolean
+	     show-name -> show id/name
+	     invoice-name -> invoice id/name
+	     item-name -> listof item objects
+
+     dashboard (object)
+     	     posts -> listof message
+	     current-date -> int
+
+
+Later datastructures will need to be defined for Latex abstraction.
+
