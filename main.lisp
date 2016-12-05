@@ -4,7 +4,7 @@
 	:cl-pass
 	:hunchentoot
 	:parenscript))
-;;;All predicted data objects needed
+;;;All predicted data objects neededers
 
 (defclass show ()
   ((contact-name :initarg :contact-name
@@ -99,7 +99,7 @@
 	 :accessor message-date)
    (content :initarg :content
 	    :accessor message-content)
-   (reply :initarg :content
+   (reply :initarg :reply
 	  :accessor message-reply)
    (read-date :initarg :read-date
 	 :accessor message-read-date)
@@ -124,7 +124,7 @@
 
 (defun find-show-name (name data-lst)
   (find name data-lst :test #'string-equal
-	:key #'name))
+	:key #'show-name))
 
 (defun add-show (show-obj)
   (push (make-instance 'show
@@ -144,8 +144,35 @@
   (push (make-instance 'user
 		       :name username
 		       :password password
-		       :rank 'user)
+		       :rank "user")
 	*users*))
+
+(defvar *current-message-list* '())
+(defun find-global-messages ()
+  (remove-if-not (lambda (x)
+		   (string= "global" (message-recipient x)))
+		 *current-message-list*))
+
+(defun register-message (&key sender recipient
+			   date content
+			   reply read-date
+			   read-on private
+			   show-name
+			   invoice-name
+			   item-name)
+  (push (make-instance 'message
+		       :sender sender
+		       :recipient recipient
+		       :reply reply
+		       :date date
+		       :content content
+		       :read-date read-date
+		       :read-on read-on
+		       :private private
+		       :show-name show-name
+		       :invoice-name invoice-name
+		       :item-name item-name)
+	*current-message-list*))
 
 ;;; Webserver functions and scaffolding
 (setf (html-mode) :html5)
@@ -167,26 +194,95 @@
 		    :href "css/bootstrap-theme.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "css/corrections.css"))
+		    :href "css/style.css"))
 	    (:body
-	     
+	    
 	     ,@body))))
 
+(defmacro standard-navbar ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:nav :class "navbar navbar-default" :role "navigation"
+	   (:div :class "container-fluid"
+		 (:div :class "navbar-header"
+		       (:button :type "button"
+				:class "navbar-toggle collapsed"
+				:data-toggle "collapsed"
+				:data-target "#collapsible"
+				(:span :class "sr-only" "Toggle navigation")
+				(:span :class "icon-bar")
+				(:span :class "icon-bar")))
+		 (:div :class "collapse navbar-collapse"
+		       :id "collapsible"
+		       (:ul :class "nav navbar-nav"
+			    (:li (:a :href "/dashboard" "Timeline"))
+			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile")))
+		       (:ul :class "nav navbar-nav navbar-right"
+			    (:li (:a :href "/signout" "Sign out"))))))))
+
+(defmacro standard-dashboard (&key messages)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-heading user-brief"
+		 (:h1 "Dashboard")
+		 (:form :role "form"
+			:action "/addmessage"
+			:method "post"
+			:class "form-inline"
+			(:div :class "form-group"
+			      (:label :class "sr-only" :for "tweet" "Say Something")
+			      (:input :type "text" :class "form-control"
+				      :id "message" :name "message"
+				      :placeholder "Post a message")
+			      (:button :type "Submit Message" :class "btn btn-default" "Message"))))
+	   (:div :class "panel-body"
+		 ,messages))))
+
+(defmacro standard-global-messages ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :id "tweets"
+     (dolist (messages (find-global-messages)) *current-message-list*
+     (htm (:div :class "media tweet alert alert-info"
+	   (:div :class "media-left"
+		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
+	   (:div :class "media-body"
+		 (:h4 :class "media-heading"
+		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
+			  (fmt "~A" (escape-string (message-sender messages)))))
+		 (fmt "~A" (escape-string (message-content messages))))))))))
+
+(define-easy-handler (addmessage :uri "/addmessage") ()
+  (let ((username (cookie-in "current-user"))
+	(message (hunchentoot:post-parameter "message")))
+    (register-message :sender username
+		      :recipient "global"
+		      :content message))
+  (redirect "/dashboard"))
+
+(define-easy-handler (dashboard :uri "/dashboard") ()
+  (standard-page (:title "test")
+    (standard-navbar)
+    (standard-dashboard :messages (standard-global-messages))))
+
+(define-easy-handler (signout :uri "/signout") ()
+  (set-cookie "current-user" :value "login")
+  (redirect "/login"))
+
+(define-easy-handler (profilelogin :uri "/profilelogin") ()
+  (redirect "/login"))
 (define-easy-handler (home :uri "/") ()
   (standard-page (:title "RILEY Inventory System")
-    (:a :href "/createshow" "Create Show")))
-
-(define-easy-handler (orc :uri "/orc") ()
-  (standard-page (:title "WHEW LAD")
-    (:h1 "If you got here you can stop for tonight.")))
+    (redirect "/login")))
 
 (define-easy-handler (check-login :uri "/check-login") ()
   (let
       ((username (hunchentoot:post-parameter "username"))
        (password (hunchentoot:post-parameter "password")))
-    (if (cl-pass:check-password password (user-password (find-user username)))
-	(redirect "/orc")
-	(redirect "/epicfail"))))
+    (cond ((cl-pass:check-password password (user-password (find-user username)))
+	   (set-cookie "current-user" :value username)
+	   (redirect "/dashboard"))
+	  (t
+	   (redirect "/login")))))
+
 (define-easy-handler (createshow :uri "/createshow") ()
   (standard-page (:title "CREATE SHOW")
     (:div :id "form"
@@ -225,8 +321,8 @@
 	     (not (find-user username)))
 	(and (register-user :username username
 			    :password (cl-pass:hash password))
-	     (redirect "/"))
-	(redirect "/fail"))))
+	     (redirect "/login"))
+	(redirect "/badpassword"))))
 
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
