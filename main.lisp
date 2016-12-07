@@ -239,16 +239,16 @@
 
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :id "tweets"
+    
      (dolist (messages (find-global-messages)) *current-message-list*
-     (htm (:div :class "media tweet alert alert-info"
+     (htm (:div :class "media alert alert-info"
 	   (:div :class "media-left"
 		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
 	   (:div :class "media-body"
 		 (:h4 :class "media-heading"
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
 			  (fmt "~A" (escape-string (message-sender messages)))))
-		 (fmt "~A" (escape-string (message-content messages))))))))))
+		  (fmt "~A" (escape-string (message-content messages)))))))))
 
 (define-easy-handler (addmessage :uri "/addmessage") ()
   (let ((username (cookie-in "current-user"))
@@ -259,9 +259,12 @@
   (redirect "/dashboard"))
 
 (define-easy-handler (dashboard :uri "/dashboard") ()
-  (standard-page (:title "test")
+  (let ((username (cookie-in "current-user")))
+    (if (not (string= username "login"))
+  (standard-page (:title "Dashboard")
     (standard-navbar)
-    (standard-dashboard :messages (standard-global-messages))))
+    (standard-dashboard :messages (standard-global-messages)))
+  (redirect "/login"))))
 
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
@@ -344,12 +347,12 @@
 			 :name "username"
 			 :id "username")
 		 (:br)
-		 (:input :type "text"
+		 (:input :type "password"
 			 :placeholder "Password"
 			 :name "password"
 			 :id "password")
 		 (:br)
-		 (:input :type "text"
+		 (:input :type "password"
 			 :placeholder "Repeat Password"
 			 :name "password-repeat"
 			 :id "password-repeat")
@@ -368,7 +371,7 @@
 			 :name "username"
 			 :id "username")
 		 (:br)
-		 (:input :type "text"
+		 (:input :type "password"
 			 :placeholder "Password"
 			 :name "password"
 			 :id "password")
