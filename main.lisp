@@ -215,7 +215,8 @@
 		       :id "collapsible"
 		       (:ul :class "nav navbar-nav"
 			    (:li (:a :href "/dashboard" "Timeline"))
-			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile")))
+			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile"))
+			    (:li (:a :href "/write-order" "Write Order")))
 		       (:ul :class "nav navbar-nav navbar-right"
 			    (:li (:a :href "/signout" "Sign out"))))))))
 
@@ -239,7 +240,6 @@
 
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
-    
      (dolist (messages (find-global-messages)) *current-message-list*
      (htm (:div :class "media alert alert-info"
 	   (:div :class "media-left"
@@ -248,7 +248,35 @@
 		 (:h4 :class "media-heading"
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
 			  (fmt "~A" (escape-string (message-sender messages)))))
-		  (fmt "~A" (escape-string (message-content messages)))))))))
+		 (fmt "~A" (escape-string (message-content messages)))))))))
+
+(defmacro standard-order-intro ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-body" (:form :class "form-inline"
+	    :action "/createInvoice"
+	    :method "POST"
+	    :id "New-invoice-form"
+	    (:div :class "form-group"
+		  (:label :for "inputShow" "Show")
+		  (:input :type "text" :class "form-control" :id "inputShowname"
+			  :placeholder "Showname"))
+	    (:div :class "form-group"
+		  (:label :for "inputSet" "Set")
+		  (:input :type "text" :class "form-control" :id "inputSetname"
+			  :placeholder "Set Name"))
+	    (:div :class "form-group"
+		  (:label :for "inputContact" "Contact Name")
+		  (:input :type "text" :class "form-control" :id "inputContact"
+			  :placeholder "Contact Name"))
+	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
+
+(define-easy-handler (createInvoice :uri "/createInvoice") ()
+    (redirect "/dashboard"))
+(define-easy-handler (write-order :uri "/write-order") ()
+  (standard-page (:title "Write Order")
+    (standard-navbar)
+    (standard-order-intro)))
 
 (define-easy-handler (addmessage :uri "/addmessage") ()
   (let ((username (cookie-in "current-user"))
@@ -260,7 +288,7 @@
 
 (define-easy-handler (dashboard :uri "/dashboard") ()
   (let ((username (cookie-in "current-user")))
-    (if (not (string= username "login"))
+    (if (not (or (string= username "login") (string= username "")))
   (standard-page (:title "Dashboard")
     (standard-navbar)
     (standard-dashboard :messages (standard-global-messages)))
