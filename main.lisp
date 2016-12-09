@@ -120,6 +120,7 @@
      (current-date :initarg :current-date
 		   :accessor dashboard-current-date)))
 ;;; Data
+(defvar *global-invoice-id* 0)
 (defvar *current-show-list* '())
 
 (defun find-show-name (name data-lst)
@@ -174,6 +175,20 @@
 		       :item-name item-name)
 	*current-message-list*))
 
+(defvar *global-invoice-list* '())
+(defun find-invoice (invoicename)
+  (find invoicename *global-invoice-list* :test #'string-equal
+	:key #'show-name))
+(defun register-invoice (&key id-num
+			   set-name
+			   show-name
+			   contact-name)
+  (push (make-instance 'invoice
+		       :id-num id-num
+		       :set-name set-name
+		       :show-name show-name
+		       
+		       :contact-name contact-name) *global-invoice-list*))
 ;;; Webserver functions and scaffolding
 (setf (html-mode) :html5)
 
@@ -248,6 +263,7 @@
 		 (:h4 :class "media-heading"
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
 			  (fmt "~A" (escape-string (message-sender messages)))))
+		 
 		 (fmt "~A" (escape-string (message-content messages)))))))))
 
 (defmacro standard-order-intro ()
@@ -260,19 +276,33 @@
 	    (:div :class "form-group"
 		  (:label :for "inputShow" "Show")
 		  (:input :type "text" :class "form-control" :id "inputShowname"
-			  :placeholder "Showname"))
+			  :placeholder "Showname" :name "inputShowname"))
 	    (:div :class "form-group"
 		  (:label :for "inputSet" "Set")
 		  (:input :type "text" :class "form-control" :id "inputSetname"
-			  :placeholder "Set Name"))
+			  :placeholder "Set Name" :name "inputSetname"))
 	    (:div :class "form-group"
 		  (:label :for "inputContact" "Contact Name")
 		  (:input :type "text" :class "form-control" :id "inputContact"
-			  :placeholder "Contact Name"))
+			  :placeholder "Contact Name" :name "inputContact"))
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
 
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
-    (redirect "/dashboard"))
+  (let ((showname (hunchentoot:post-parameter "inputShowname"))
+	(setname (hunchentoot:post-parameter "inputSetname"))
+	(contact (hunchentoot:post-parameter "inputContact")))
+    (register-invoice :id-num (+ *global-invoice-id* 1)
+		      :set-name setname
+		      :show-name showname
+		      :contact-name contact)
+    (set-cookie "current-invoice" :value  *global-invoice-id*)
+  (register-message :sender "Global Messages" :recipient "global"
+		    :content (concatenate 'string "An order has been started for " showname
+					   " for set " setname
+					   " ordered by " contact )
+		    :invoice-name '(setname showname contact *global-invoice-id*)))
+  (redirect "/dashboard"))
+		      
 (define-easy-handler (write-order :uri "/write-order") ()
   (standard-page (:title "Write Order")
     (standard-navbar)
