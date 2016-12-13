@@ -175,10 +175,23 @@
 		       :item-name item-name)
 	*current-message-list*))
 
+(defun find-invoice-from-message (mess)
+  (let ((setname (first (message-invoice-name mess)))
+	(showname (second (message-invoice-name mess))))
+    (first (remove-if-not (lambda (x)
+		     (and (string= setname (invoice-set-name x))
+			  (string= showname (show-name x))))
+		   *global-invoice-list*))))
+
+
+
+			 
 (defvar *global-invoice-list* '())
+
 (defun find-invoice (invoicename)
   (find invoicename *global-invoice-list* :test #'string-equal
 	:key #'show-name))
+
 (defun register-invoice (&key id-num
 			   set-name
 			   show-name
@@ -255,7 +268,7 @@
 
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
-     (dolist (messages (find-global-messages)) *current-message-list*
+     (dolist (messages (find-global-messages)) 
      (htm (:div :class "media alert alert-info"
 	   (:div :class "media-left"
 		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
@@ -264,7 +277,15 @@
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
 			  (fmt "~A" (escape-string (message-sender messages)))))
 		 
-		 (fmt "~A" (escape-string (message-content messages)))))))))
+		 (fmt "~A" (escape-string (message-content messages))))
+	   (if (find-invoice-from-message messages)
+	       (htm
+		(:div :class "media-right"
+		      (:form :action "/setthemcookies"
+			     :method "POST"
+			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
+			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
+		 (:button :type "submit" :class "btn btn-default" "Write Order"))))))))))
 
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -287,6 +308,14 @@
 			  :placeholder "Contact Name" :name "inputContact"))
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
 
+(defmacro standard-invoice-writing (&key show set)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-body"
+		 (:ul :class "list-group"
+		      (:li :class "list-group-item list-group-item-success" ,show)
+		      (:li :class "list-group-item list-group-item-danger" ,set))))))
+
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
   (let ((showname (hunchentoot:post-parameter "inputShowname"))
 	(setname (hunchentoot:post-parameter "inputSetname"))
@@ -300,7 +329,7 @@
 		    :content (concatenate 'string "An order has been started for " showname
 					   " for set " setname
 					   " ordered by " contact )
-		    :invoice-name '(setname showname contact *global-invoice-id*)))
+		    :invoice-name (list setname showname contact *global-invoice-id*)))
   (redirect "/dashboard"))
 		      
 (define-easy-handler (write-order :uri "/write-order") ()
@@ -323,6 +352,12 @@
     (standard-navbar)
     (standard-dashboard :messages (standard-global-messages)))
   (redirect "/login"))))
+
+(define-easy-handler (setthemcookies :uri "/setthemcookies") ()
+  (standard-page (:title "Set Them Cookies")
+    (standard-navbar)
+    (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string (hunchentoot:post-parameter "showname")))
+    :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname"))))))
 
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
