@@ -174,7 +174,7 @@
 		       :invoice-name invoice-name
 		       :item-name item-name)
 	*current-message-list*))
-
+(defvar *global-invoice-list* '())
 (defun find-invoice-from-message (mess)
   (let ((setname (first (message-invoice-name mess)))
 	(showname (second (message-invoice-name mess))))
@@ -186,7 +186,7 @@
 
 
 			 
-(defvar *global-invoice-list* '())
+
 
 (defun find-invoice (invoicename)
   (find invoicename *global-invoice-list* :test #'string-equal
@@ -226,6 +226,9 @@
 	    (:body
 	    
 	     ,@body))))
+(defvar *global-invoice-list* '())
+
+;;; Standard Page Macros
 
 (defmacro standard-navbar ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -285,6 +288,7 @@
 			     :method "POST"
 			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
 			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
+			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
 		 (:button :type "submit" :class "btn btn-default" "Write Order"))))))))))
 
 (defmacro standard-order-intro ()
@@ -308,13 +312,33 @@
 			  :placeholder "Contact Name" :name "inputContact"))
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
 
-(defmacro standard-invoice-writing (&key show set)
+(defmacro standard-picture-upload ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-body"
+		 (:form :action "/displayimagegot"
+			:class "form-inline"
+			:method "POST"
+			:enctype "multipart/form-data"
+			:id "new-picture-upload"
+			(:div :class "form-group"
+			      (:input
+			       :multiple "multiple"
+			       :id "picture-batch"
+			       :name "picture-batch"
+			       :type "file"
+			       
+				      :name "img"
+				      )
+			      (:input :type "submit")))))))
+(defmacro standard-invoice-writing (&key show set contact)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
 	   (:div :class "panel-body"
 		 (:ul :class "list-group"
 		      (:li :class "list-group-item list-group-item-success" ,show)
-		      (:li :class "list-group-item list-group-item-danger" ,set))))))
+		      (:li :class "list-group-item list-group-item-danger" ,set)
+		      (:li :class "list-group-item list-group-item-success" ,contact))))))
 
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
   (let ((showname (hunchentoot:post-parameter "inputShowname"))
@@ -353,11 +377,27 @@
     (standard-dashboard :messages (standard-global-messages)))
   (redirect "/login"))))
 
+(define-easy-handler (displayimagegot :uri "/displayimagegot") ()
+  (let ((whatever (loop for post-parameter in (hunchentoot:post-parameters*)
+		     if (equal (car post-parameter) "picture-batch")
+				    collect post-parameter)))
+    (standard-page (:title "Picture Batch")
+      (standard-navbar)
+      (mapc #'(lambda (x)
+		(format t "~A ~A ~A ~A <br>"  (car x)
+			(second x)
+			(third x)
+			(fourth x)))
+		     
+	    whatever))))
+
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
   (standard-page (:title "Set Them Cookies")
     (standard-navbar)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string (hunchentoot:post-parameter "showname")))
-    :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname"))))))
+			      :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname")))
+			      :contact (fmt "Contact: ~A" (escape-string (hunchentoot:post-parameter "contact"))))
+    (standard-picture-upload)))
 
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
@@ -403,12 +443,14 @@
 		 (:button :type "submit"
 			  :class "btn btn-primary"
 			  "Create Show")))))
+
 (define-easy-handler (addshow :uri "/addshow") ()
   (add-show (make-instance 'show
 			   :name (hunchentoot:post-parameter "name")
 			   :contact-name (hunchentoot:post-parameter "contact-name")
 			   :phone-number (hunchentoot:post-parameter "phone-number")))
   (redirect "/"))
+
 (define-easy-handler (adduser :uri "/adduser") ()
   (let ((username (hunchentoot:post-parameter "username"))
 	(password (hunchentoot:post-parameter "password"))
