@@ -1,9 +1,18 @@
+;;;Initial Declarations
+
 (defpackage :riley
   (:use :cl
 	:cl-who
 	:cl-pass
 	:hunchentoot
 	:parenscript))
+
+(defvar *current-message-list* '())
+(defvar *global-invoice-list* '())
+(defvar *users* '())
+(defvar *global-invoice-id* 0)
+(defvar *current-show-list* '())
+
 ;;;All predicted data objects neededers
 
 (defclass show ()
@@ -20,15 +29,6 @@
    (name :initarg :name
 	 :accessor show-name)))
 
-(defun make-show (&key contact-name-t phone-number-t
-		    order-amount-t list-of-invoices-t
-		    name-t )
-  (make-instance 'show
-		 :name name-t
-		 :contact-name contact-name-t
-		 :phone-number phone-number-t
-		 :order-amount order-amount-t
-		 :list-of-invoices list-of-invoices-t))
 (defclass invoice ()
   ((id-num :initarg :id-num
 	      :accessor invoice-id-num)
@@ -119,14 +119,26 @@
 	    :accessor dashboard-posts)
      (current-date :initarg :current-date
 		   :accessor dashboard-current-date)))
-;;; Data
-(defvar *global-invoice-id* 0)
-(defvar *current-show-list* '())
 
+;;; Helper functions for classes
+
+;;;Create a show, doesn't appear to be used at the moment.
+(defun make-show (&key contact-name-t phone-number-t
+		    order-amount-t list-of-invoices-t
+		    name-t )
+  (make-instance 'show
+		 :name name-t
+		 :contact-name contact-name-t
+		 :phone-number phone-number-t
+		 :order-amount order-amount-t
+		 :list-of-invoices list-of-invoices-t))
+
+;;;Using a string NAME search for SHOW-NAME in DATA-LST
 (defun find-show-name (name data-lst)
   (find name data-lst :test #'string-equal
 	:key #'show-name))
 
+;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
 (defun add-show (show-obj)
   (push (make-instance 'show
 		       :name (show-name show-obj)
@@ -135,12 +147,12 @@
 		       :order-amount (show-order-amount show-obj)
 		       :list-of-invoices (list-of-invoices show-obj))  *current-show-list* ))
 
-(defvar *users* '())
-
+;;;Search *USERS* for USERNAME
 (defun find-user (username)
   (find username *users* :test #'string-equal
 	:key #'user-name))
 
+;;;Create a user from a USERNAME and PASSWORD and push onto *USERS*
 (defun register-user (&key username password)
   (push (make-instance 'user
 		       :name username
@@ -148,12 +160,13 @@
 		       :rank "user")
 	*users*))
 
-(defvar *current-message-list* '())
+;;;Find all messages recieved by GLOBAL
 (defun find-global-messages ()
   (remove-if-not (lambda (x)
 		   (string= "global" (message-recipient x)))
 		 *current-message-list*))
 
+;;;Create a message from any of the valid keys and push it onto the *CURRENT-MESSAGE-LIST*
 (defun register-message (&key sender recipient
 			   date content
 			   reply read-date
@@ -174,7 +187,9 @@
 		       :invoice-name invoice-name
 		       :item-name item-name)
 	*current-message-list*))
-(defvar *global-invoice-list* '())
+
+;;;Find an invoice-object connected to a message
+;;;Used for generating buttons on the dashboard
 (defun find-invoice-from-message (mess)
   (let ((setname (first (message-invoice-name mess)))
 	(showname (second (message-invoice-name mess))))
@@ -183,15 +198,12 @@
 			  (string= showname (show-name x))))
 		   *global-invoice-list*))))
 
-
-
-			 
-
-
+;;;Search the *GLOBAL-INVOICE-LIST* for INVOICENAME
 (defun find-invoice (invoicename)
   (find invoicename *global-invoice-list* :test #'string-equal
 	:key #'show-name))
 
+;;;Create an invoice and and push it onto the *GLOBAL-INVOICE-LIST*
 (defun register-invoice (&key id-num
 			   set-name
 			   show-name
@@ -200,14 +212,18 @@
 		       :id-num id-num
 		       :set-name set-name
 		       :show-name show-name
-		       
 		       :contact-name contact-name) *global-invoice-list*))
+
 ;;; Webserver functions and scaffolding
+;;;Set HTML5 preamble
 (setf (html-mode) :html5)
 
 (defun start-server (port)
   (start (make-instance 'easy-acceptor :port port)))
 
+;;;Macro's for generating HTML
+;;;Macros should be designed to work together so pages
+;;;can be as modular as possible.
 (defmacro standard-page ((&key title) &body body)
   `(with-html-output-to-string
        (*standard-output* nil :prologue t :indent t)
@@ -227,9 +243,6 @@
 	    (:body
 	    
 	     ,@body))))
-(defvar *global-invoice-list* '())
-
-;;; Standard Page Macros
 
 (defmacro standard-navbar ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -340,6 +353,8 @@
 		      (:li :class "list-group-item list-group-item-success" ,show)
 		      (:li :class "list-group-item list-group-item-danger" ,set)
 		      (:li :class "list-group-item list-group-item-success" ,contact))))))
+
+;;;Define page handler functions
 
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
   (let ((showname (hunchentoot:post-parameter "inputShowname"))
