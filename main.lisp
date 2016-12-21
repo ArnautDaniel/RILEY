@@ -213,6 +213,7 @@
        (*standard-output* nil :prologue t :indent t)
      (:html :lang "en"
 	    (:head
+	     
 	     (:link :rel "stylesheet"
 		    :type "text/css"
 		    :href "css/bootstrap.css")
@@ -384,10 +385,13 @@
     (standard-page (:title "Picture Batch")
       (standard-navbar)
       (mapc #'(lambda (x)
-		(format t "~A ~A ~A ~A <br>"  (car x)
+		(format t "~A ~A ~A ~A <br>"  (first x)
 			(second x)
 			(third x)
-			(fourth x)))
+			(fourth x))
+		(rename-file (second x)
+			     (concatenate 'string "/tmp/"
+					  (third x))))
 		     
 	    whatever))))
 
