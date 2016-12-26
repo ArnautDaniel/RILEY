@@ -45,6 +45,8 @@
 			:accessor invoice-check-in-accounting)
    (item-list :initarg :itemlist
 	      :accessor invoice-item-list)
+   (root-dir :initarg :root-dir
+	     :accessor invoice-root-dir)
    (pdf-location :initarg :pdf-location
 		 :accessor invoice-pdf-location)))
 
@@ -69,6 +71,8 @@
 		:accessor item-description)
    (invoices-on :initarg :invoices-on
 		:accessor item-invoices-on)
+   (picture    :initarg :pictures
+		:accessor item-picture)
    (shows-on :initarg :shows-on
 	     :accessor item-shows-on)))
 
@@ -207,12 +211,14 @@
 (defun register-invoice (&key id-num
 			   set-name
 			   show-name
-			   contact-name)
+			   contact-name
+			   root-dir)
   (push (make-instance 'invoice
 		       :id-num id-num
 		       :set-name set-name
 		       :show-name show-name
-		       :contact-name contact-name) *global-invoice-list*))
+		       :contact-name contact-name
+		       :root-dir root-dir) *global-invoice-list*))
 
 ;;; Webserver functions and scaffolding
 ;;;Set HTML5 preamble
@@ -341,9 +347,8 @@
 			       :id "picture-batch"
 			       :name "picture-batch"
 			       :type "file"
-			       
-				      :name "img"
-				      )
+			       :name "img")
+			      
 			      (:input :type "submit")))))))
 (defmacro standard-invoice-writing (&key show set contact)
   `(with-html-output (*standard-output* nil :indent t)
@@ -357,13 +362,20 @@
 ;;;Define page handler functions
 
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
-  (let ((showname (hunchentoot:post-parameter "inputShowname"))
+  (let* ((showname (hunchentoot:post-parameter "inputShowname"))
 	(setname (hunchentoot:post-parameter "inputSetname"))
-	(contact (hunchentoot:post-parameter "inputContact")))
+	 (contact (hunchentoot:post-parameter "inputContact"))
+	 (root-dir (concatenate 'string (directory-namestring (acceptor-document-root *acceptor*))
+				"show-bank"
+				"/"
+				 showname
+				"/" setname "/")))
+    (ensure-directories-exist root-dir)
     (register-invoice :id-num (+ *global-invoice-id* 1)
 		      :set-name setname
 		      :show-name showname
-		      :contact-name contact)
+		      :contact-name contact
+		      :root-dir root-dir)
     (set-cookie "current-invoice" :value  *global-invoice-id*)
   (register-message :sender "Global Messages" :recipient "global"
 		    :content (concatenate 'string "An order has been started for " showname
@@ -412,11 +424,15 @@
 
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
   (standard-page (:title "Set Them Cookies")
+    (let* ((showname (escape-string (hunchentoot:post-parameter "showname")))
+	  (setname (escape-string (hunchentoot:post-parameter "setname")))
+	  (invoice (find-invoice-from-message (make-instance 'message
+							      :invoice-name (list setname showname)))))
     (standard-navbar)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string (hunchentoot:post-parameter "showname")))
 			      :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname")))
 			      :contact (fmt "Contact: ~A" (escape-string (hunchentoot:post-parameter "contact"))))
-    (standard-picture-upload)))
+    (standard-picture-upload))))
 
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
@@ -438,38 +454,6 @@
 	  (t
 	   (redirect "/login")))))
 
-(define-easy-handler (createshow :uri "/createshow") ()
-  (standard-page (:title "CREATE SHOW")
-    (:div :id "form"
-	  (:form :action "/addshow"
-		 :method "POST"
-		 :id "commentform"
-		 (:input :type "text"
-			 :placeholder "Show Name"
-			 :name "name"
-			 :id "name")
-		 (:br)
-		 (:input :type "text"
-			 :placeholder "Contact Name"
-			 :name "contact-name"
-			 :id "contact-name")
-		 (:br)
-		 (:input :type "text"
-			 :placeholder "Phone Number"
-			 :name "phone-number"
-			 :id "phone-number")
-		 (:br)
-		 (:button :type "submit"
-			  :class "btn btn-primary"
-			  "Create Show")))))
-
-(define-easy-handler (addshow :uri "/addshow") ()
-  (add-show (make-instance 'show
-			   :name (hunchentoot:post-parameter "name")
-			   :contact-name (hunchentoot:post-parameter "contact-name")
-			   :phone-number (hunchentoot:post-parameter "phone-number")))
-  (redirect "/"))
-
 (define-easy-handler (adduser :uri "/adduser") ()
   (let ((username (hunchentoot:post-parameter "username"))
 	(password (hunchentoot:post-parameter "password"))
@@ -484,6 +468,7 @@
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
     (:div :id "landing"
+	  (:div :class "container-fluid"
 	  (:div :class "panel panel-default"
 	  :id "welcome-panel"
 	  (:div :class "panel-heading"
@@ -492,44 +477,66 @@
 		(:div :class "row"
 		(:div :class "col-md-6"
 		     
-		(:div :id "form"
+			   
 	  (:form :action "/adduser"
 		 :method "POST"
 		 :id "commentform"
+		 (:div :class "input-group"
+		 (:span :class "input-group-addon"
+			:id "basic-addon1" "@")
 		 (:input :type "text"
+			 :class "form-control"
 			 :placeholder "Username"
 			 :name "username"
-			 :id "username")
-		 (:br)
+			 :aria-describedby "basic-addon1"
+			 :id "username"))
+		 (:div :class "input-group"
+		       (:span :class "input-group-addon"
+			      :id "basic-addon1" "$")
 		 (:input :type "password"
 			 :placeholder "Password"
 			 :name "password"
-			 :id "password")
-		 (:br)
-		 (:input :type "password"
+			 :class "form-control"
+			 :aria-describedby "basic-addon1"
+			 :id "password"))
+		 (:div :class "input-group"
+		       (:span :class "input-group-addon"
+			      :id "basic-addon1" "$")
+		       (:input :type "password"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
 			 :placeholder "Repeat Password"
 			 :name "password-repeat"
-			 :id "password-repeat")
-		 (:br)
-		 (:button :type "submit"
+			 :id "password-repeat"))
+		 
+		 (:center (:button :type "submit"
 			  :class "btn btn-primary"
 			  "Create Account"))))
-    (:br)
+    
     (:div :class "col-md-6"
 	  (:div :id "form"
 	  (:form :action "/check-login"
 		 :method "POST"
 		 :id "commentform"
-		 (:input :type "text"
+		 (:div :class "input-group"
+		       (:span :class "input-group-addon"
+			      :id "basic-addon1" "@")
+		       (:input :type "text"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
 			 :placeholder "Username"
 			 :name "username"
-			 :id "username")
-		 (:br)
-		 (:input :type "password"
+			 :id "username"))
+		 (:div :class "input-group"
+		       (:span :class "input-group-addon"
+			      :id "basic-addon1" "$")
+		       (:input :type "password"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
 			 :placeholder "Password"
 			 :name "password"
-			 :id "password")
-		 (:br)
-		 (:button :type "submit"
+			 :id "password"))
+		 
+		 (:center (:button :type "submit"
 			  :class "btn btn-primary"
-			  "Login"))))))))))
+			  "Login"))))))))))))
