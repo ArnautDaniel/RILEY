@@ -202,6 +202,14 @@
 			  (string= showname (show-name x))))
 		   *global-invoice-list*))))
 
+(defun find-invoice-from-invoice (inv)
+  (let ((setname (invoice-set-name inv))
+	(showname (show-name inv)))
+    (first (remove-if-not (lambda (x)
+			    (and (string= setname (invoice-set-name x))
+				 (string= showname (show-name x))))
+			  *global-invoice-list*))))
+
 ;;;Search the *GLOBAL-INVOICE-LIST* for INVOICENAME
 (defun find-invoice (invoicename)
   (find invoicename *global-invoice-list* :test #'string-equal
@@ -331,7 +339,15 @@
 		  (:input :type "text" :class "form-control" :id "inputContact"
 			  :placeholder "Contact Name" :name "inputContact"))
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
-
+(defmacro standard-picture-table (&key image-list)
+  `(with-html-output (*standard-output* nil :indent t)
+		   (:div :class "table-container"
+		    (dolist (image ,image-list)
+		      
+		      (htm (:div :class "table-cell-container center"
+				    (:img :src image :class "img-responsive")))))))
+				
+			      
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -350,14 +366,15 @@
 			       :name "img")
 			      
 			      (:input :type "submit")))))))
-(defmacro standard-invoice-writing (&key show set contact)
+(defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
 	   (:div :class "panel-body"
 		 (:ul :class "list-group"
 		      (:li :class "list-group-item list-group-item-success" ,show)
 		      (:li :class "list-group-item list-group-item-danger" ,set)
-		      (:li :class "list-group-item list-group-item-success" ,contact))))))
+		      (:li :class "list-group-item list-group-item-success" ,contact)
+		      (:li :class "list-group-item list-group-item-danger" ,pic-num))))))
 
 ;;;Define page handler functions
 
@@ -398,6 +415,7 @@
   (redirect "/dashboard"))
 
 (define-easy-handler (dashboard :uri "/dashboard") ()
+  (set-cookie "current-invoice" :value "none")
   (let ((username (cookie-in "current-user")))
     (if (not (or (string= username "login") (string= username "")))
   (standard-page (:title "Dashboard")
@@ -418,12 +436,36 @@
 			(fourth x))
 		(rename-file (second x)
 			     (concatenate 'string "/tmp/"
-					  (third x))))
+					  (third x)))
+		(move-image-to-invoice-dir x))
 		     
 	    whatever))))
 
+(defun find-invoice-from-cookie (invoice-string)
+  (if (not (string= "none" invoice-string))
+  (let* ((magic-number (search "-" invoice-string))
+	 (showname (subseq invoice-string 0 magic-number))
+	 (setname (subseq invoice-string (+ magic-number 1)))
+	 (temp-invoice (make-instance 'invoice :show-name showname
+				      :set-name setname)))
+    (find-invoice-from-invoice temp-invoice))))
+    
+(defun move-image-to-invoice-dir (img-data)
+  (let* ((current-invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (invoice-location (invoice-root-dir current-invoice))
+	 (temp-image-directory "/tmp/")
+	 (image-name (third img-data)))
+    (cl-fad:copy-file (make-pathname :directory temp-image-directory
+				     :name image-name)
+		      (make-pathname :directory invoice-location
+				     :name image-name))))
+
+;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
-  (standard-page (:title "Set Them Cookies")
+  (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
+						    "-" (hunchentoot:post-parameter "setname")))
+  (standard-page (:title (concatenate 'string (hunchentoot:post-parameter "showname")
+				      " - " (hunchentoot:post-parameter "setname")))
     (let* ((showname (escape-string (hunchentoot:post-parameter "showname")))
 	  (setname (escape-string (hunchentoot:post-parameter "setname")))
 	  (invoice (find-invoice-from-message (make-instance 'message
@@ -431,9 +473,29 @@
     (standard-navbar)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string (hunchentoot:post-parameter "showname")))
 			      :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname")))
-			      :contact (fmt "Contact: ~A" (escape-string (hunchentoot:post-parameter "contact"))))
-    (standard-picture-upload))))
+			      :contact (fmt "Contact: ~A" (escape-string (hunchentoot:post-parameter "contact")))
+			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+												      "-" setname)))))
+    (standard-picture-upload)
+    (standard-picture-table :image-list (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice)))))))
 
+;;;Remove the absolute pathname and limit it to the show-bank directory
+;;;Probably needs to be reworked entirely
+(defun prepare-for-table (fad-list)
+  (mapcar #'(lambda (x)
+	    (let ((string-path-image (namestring x)))
+	      (subseq (namestring string-path-image) 70)))
+	  fad-list))
+
+;;;Expects an invoice with the string showname-setname
+(defun count-pics-from-invoice (inv)
+  (if (string= "none" inv)
+	"0"
+	(let* ((invoice (find-invoice-from-cookie inv))
+	       (invoice-pathname (invoice-root-dir invoice)))
+	  (concatenate 'string "There are " (write-to-string (length (cl-fad:list-directory invoice-pathname)))
+		       " pictures on this order"))))
+  
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
   (redirect "/login"))
