@@ -243,7 +243,7 @@
        (*standard-output* nil :prologue t :indent t)
      (:html :lang "en"
 	    (:head
-	     
+	     (:meta :name "viewport" :content "width=device-width, initial-scale=1")
 	     (:link :rel "stylesheet"
 		    :type "text/css"
 		    :href "css/bootstrap.css")
@@ -341,17 +341,19 @@
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-		   (:div :class "table-container"
+     (:div :class "container"
+	   (:div :class "row"
 		    (dolist (image ,image-list)
 		      
-		      (htm (:div :class "table-cell-container center"
-				    (:img :src image :class "img-responsive")))))))
+		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
+				    (:img :src image :class "img-responsive"))))))))
 				
 			      
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
 	   (:div :class "panel-body"
+		 (:h3 "Upload pictures to this order:")
 		 (:form :action "/displayimagegot"
 			:class "form-inline"
 			:method "POST"
