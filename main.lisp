@@ -1,5 +1,4 @@
 ;;;Initial Declarations
-
 (defpackage :riley
   (:use :cl
 	:cl-who
@@ -312,13 +311,44 @@
 	   (if (find-invoice-from-message messages)
 	       (htm
 		(:div :class "media-right"
-		      (:form :action "/setthemcookies"
+		      (:form :action "/pre-set-cookies"
 			     :method "POST"
 			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
 			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
 			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
-		 (:button :type "submit" :class "btn btn-default" "Write Order"))))))))))
+			     (:button :type "submit" :class "btn btn-default" "Write Order"))))))))))
 
+(defmacro standard-item-writeup (&key image)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-body"
+		 (:div :class "col-md-3 col-sm-4 col-xs-6"
+				    (:img :src ,image :class "img-responsive"))
+		 (:form :class "form-inline"
+			:action "/additem"
+			:method "POST"
+			:id "New-item"
+			(:div :class "form-group"
+			      (:br)
+			      (:label :for "inputDesc" "Description")
+			      (:input :type "text" :class "form-control"
+				      :id "input-item-description" :placeholder "Item Description"
+				      :name "input-item-description" :autofocus "autofocus")
+			      (:br)
+			      (:label :for "inputPrice" "Price")
+			      (:input :type "text" :class "form-control"
+				      :id "input-item-price" :placeholder "Item Price"
+				      :name "input-item-price")
+			      (:br)
+			      (:label :for "inputQty" "Quantity")
+			      (:input :type "text" :class "form-control"
+				      :id "input-item-qty" :placeholder "Item Quantity"
+				      :name "input-item-qty"))
+			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
+			(:br)
+			(:button :type "submit" :class "btn btn-default" "Add item"))))))
+			      
+				      
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -339,16 +369,15 @@
 		  (:input :type "text" :class "form-control" :id "inputContact"
 			  :placeholder "Contact Name" :name "inputContact"))
 	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
+
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container"
+     (:div :class "container panel panel-default"
 	   (:div :class "row"
 		    (dolist (image ,image-list)
-		      
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
 				    (:img :src image :class "img-responsive"))))))))
-				
-			      
+						      
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -366,8 +395,8 @@
 			       :name "picture-batch"
 			       :type "file"
 			       :name "img")
-			      
 			      (:input :type "submit")))))))
+
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -441,7 +470,8 @@
 					  (third x)))
 		(move-image-to-invoice-dir x))
 		     
-	    whatever))))
+	    whatever)))
+  (redirect "/setthemcookies"))
 
 (defun find-invoice-from-cookie (invoice-string)
   (if (not (string= "none" invoice-string))
@@ -462,24 +492,44 @@
 		      (make-pathname :directory invoice-location
 				     :name image-name))))
 
+(define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") ()
+  (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
+						    "-"
+						    (hunchentoot:post-parameter "setname")))
+  (redirect "/setthemcookies"))
+
+(define-easy-handler (add-item :uri "/additem") ()
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (description (hunchentoot:post-parameter "input-item-description"))
+	 (price (hunchentoot:post-parameter "input-item-price"))
+	 (qty (hunchentoot:post-parameter "input-item-qty"))
+	 (image (hunchentoot:post-parameter "image-data")))
+    (push (make-instance 'item :description description
+			 :quantity qty
+			 :price price
+			 :pictures image)
+	  (invoice-item-list invoice)))
+  (redirect "/setthemcookies"))
+	 
 ;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
-  (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
-						    "-" (hunchentoot:post-parameter "setname")))
-  (standard-page (:title (concatenate 'string (hunchentoot:post-parameter "showname")
-				      " - " (hunchentoot:post-parameter "setname")))
-    (let* ((showname (escape-string (hunchentoot:post-parameter "showname")))
-	  (setname (escape-string (hunchentoot:post-parameter "setname")))
-	  (invoice (find-invoice-from-message (make-instance 'message
-							      :invoice-name (list setname showname)))))
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (showname (show-name invoice))
+	 (setname (invoice-set-name invoice))
+	 (contact (invoice-contact-name invoice))
+	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice)))))
+    
+  (standard-page (:title "Order Writeup")
+   
     (standard-navbar)
-    (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string (hunchentoot:post-parameter "showname")))
-			      :set (fmt "Setname: ~A" (escape-string (hunchentoot:post-parameter "setname")))
-			      :contact (fmt "Contact: ~A" (escape-string (hunchentoot:post-parameter "contact")))
+    (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
+			      :set (fmt "Setname: ~A" (escape-string setname))
+			      :contact (fmt "Contact: ~A" (escape-string contact))
 			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-												      "-" setname)))))
+   									      "-" setname)))))
+    (standard-item-writeup :image (first images))
     (standard-picture-upload)
-    (standard-picture-table :image-list (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice)))))))
+    (standard-picture-table :image-list (rest images)))))
 
 ;;;Remove the absolute pathname and limit it to the show-bank directory
 ;;;Probably needs to be reworked entirely
@@ -504,6 +554,7 @@
 
 (define-easy-handler (profilelogin :uri "/profilelogin") ()
   (redirect "/login"))
+
 (define-easy-handler (home :uri "/") ()
   (standard-page (:title "RILEY Inventory System")
     (redirect "/login")))
