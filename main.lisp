@@ -225,6 +225,7 @@
 		       :set-name set-name
 		       :show-name show-name
 		       :contact-name contact-name
+		       :itemlist '()
 		       :root-dir root-dir) *global-invoice-list*))
 
 ;;; Webserver functions and scaffolding
@@ -320,7 +321,7 @@
 
 (defmacro standard-item-writeup (&key image)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
+     (:div :class "panel panel-default col-md-6 col-md-push-1"
 	   (:div :class "panel-body"
 		 (:div :class "col-md-3 col-sm-4 col-xs-6"
 				    (:img :src ,image :class "img-responsive"))
@@ -347,6 +348,7 @@
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 			(:br)
 			(:button :type "submit" :class "btn btn-default" "Add item"))))))
+     
 			      
 				      
 (defmacro standard-order-intro ()
@@ -372,15 +374,54 @@
 
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default"
+     (:div :class "container panel panel-default col-md-6 col-md-push-1"
 	   (:div :class "row"
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
-				    (:img :src image :class "img-responsive"))))))))
-						      
+				 (:img :src image :class "img-responsive"))))))))
+
+(defmacro standard-item-list-table (&key invoice)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "container panel panel-default col-md-6
+col-md-push-1"
+	  (:table :class "table table-bordered table-striped"
+		 (:thead
+		 
+		  (:tr
+		   (:th "Description")
+		   (:th "Price")
+		   (:th "Quantity")
+		   (:th "Remove?")))
+		 (:tbody
+		  (dolist (item (invoice-item-list ,invoice))
+		    (htm
+		     (:tr
+		      
+		      (:td (fmt "~A" (escape-string (item-description item))))
+		      (:td (fmt "~A" (escape-string (item-price item))))
+		      (:td (fmt "~A" (escape-string (item-quantity item))))
+		      (:td (:form :class "form-inline"
+			     :action "/removeitem"
+			     :method "POST"
+			     :id "item-table"
+			     (:input :type "hidden" :value (item-description item)
+				     :name "item" :id "item")
+			     (:input :type "hidden" :value (item-price item)
+				     :name "item-price" :id "item-price")
+			     (:input :type "hidden" :value (item-quantity item)
+				     :name "item-quantity" :id "item-quantity")
+			     (:input :type "hidden" :value ,invoice
+				     :name "invoice" :id "invoice")
+			     (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove")))))))))))
+			     
+		      
+(defmacro test-left-side ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "col-md-6"
+	   (:h1 "Hello world"))))
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
+     (:div :class "panel panel-default col-md-6 col-md-push-1"
 	   (:div :class "panel-body"
 		 (:h3 "Upload pictures to this order:")
 		 (:form :action "/displayimagegot"
@@ -510,14 +551,38 @@
 			 :pictures image)
 	  (invoice-item-list invoice)))
   (redirect "/setthemcookies"))
-	 
+
+(define-easy-handler (remove-item :uri "/removeitem") ()
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (item (hunchentoot:post-parameter "item"))
+	 (item-price (hunchentoot:post-parameter "item-price"))
+	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
+        (setf (invoice-item-list invoice) (remove-if #'(lambda (x)
+							 (and (string= (item-description x) item)
+							      (string= (item-price x) item-price)
+							      (string= (item-quantity x) item-quantity)))
+						        
+						     (invoice-item-list invoice))))
+  (redirect "/setthemcookies"))
+
+(defun filter-already-in-itemlist (images invoice)
+  (let ((itemlist (itemlist-image-location invoice)))
+    (set-difference images itemlist
+		    :test #'string=)))
+
+(defun itemlist-image-location (invoice)
+  (mapcar #'(lambda (x)
+	      (item-picture x))
+	  (invoice-item-list invoice)))
+
 ;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (showname (show-name invoice))
 	 (setname (invoice-set-name invoice))
 	 (contact (invoice-contact-name invoice))
-	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice)))))
+	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
+	 (images-filtered (filter-already-in-itemlist images invoice)))
     
   (standard-page (:title "Order Writeup")
    
@@ -527,9 +592,10 @@
 			      :contact (fmt "Contact: ~A" (escape-string contact))
 			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
    									      "-" setname)))))
-    (standard-item-writeup :image (first images))
+    (standard-item-writeup :image (first images-filtered))
     (standard-picture-upload)
-    (standard-picture-table :image-list (rest images)))))
+    (standard-item-list-table :invoice invoice)
+    (standard-picture-table :image-list (rest images-filtered)))))
 
 ;;;Remove the absolute pathname and limit it to the show-bank directory
 ;;;Probably needs to be reworked entirely
