@@ -321,7 +321,7 @@
 
 (defmacro standard-item-writeup (&key image)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default col-md-6 col-md-push-1"
+     (:div :class "panel panel-default"
 	   (:div :class "panel-body"
 		 (:div :class "col-md-3 col-sm-4 col-xs-6"
 				    (:img :src ,image :class "img-responsive"))
@@ -374,7 +374,7 @@
 
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default col-md-6 col-md-push-1"
+     (:div :class "container panel panel-default"
 	   (:div :class "row"
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
@@ -382,8 +382,7 @@
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default col-md-6
-col-md-push-1"
+     (:div :class "container panel panel-default"
 	  (:table :class "table table-bordered table-striped"
 		 (:thead
 		 
@@ -416,7 +415,7 @@ col-md-push-1"
 			     
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default col-md-6 col-md-push-1"
+     (:div :class "panel panel-default"
 	   (:div :class "panel-body"
 		 (:h3 "Upload pictures to this order:")
 		 (:form :action "/displayimagegot"
@@ -432,6 +431,14 @@ col-md-push-1"
 			       :type "file"
 			       :name "img")
 			      (:input :type "submit")))))))
+
+(defmacro standard-pdf-iframe (&key pdf)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-body"
+	   (:iframe :id "iframepdf"
+		    :height "600"
+		    :width "100%"
+		    :src ,pdf))))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
@@ -598,6 +605,7 @@ col-md-push-1"
     (standard-item-writeup :image (first images-filtered))
     (standard-picture-upload)
     (standard-item-list-table :invoice invoice)
+    (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
     (standard-picture-table :image-list (rest images-filtered)))))
 
 ;;;Remove the absolute pathname and limit it to the show-bank directory
@@ -788,8 +796,13 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
   (let* ((pdfname (concatenate 'string "pdf/" (show-name invoice)
 			       "-" (invoice-set-name invoice)
 			       ".tex"))
+	 (ironic-tex-name (concatenate 'string "pdf/" (show-name invoice)
+				       "-" (invoice-set-name invoice)
+				       ".pdf"))
 	 (complete-stream (concatenate 'string root-dir
-				       pdfname)))
+				       pdfname))
+	 (completer-stream (concatenate 'string root-dir
+					ironic-tex-name)))
     (with-open-file (s complete-stream :direction :output
 		       :if-exists :supersede)
       (princ document-conf s)
@@ -812,7 +825,14 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 		    (fresh-line s)) (invoice-item-list invoice))
       (princ end-table s)
       (fresh-line s)
-      (princ tail-conf s))))
+      (princ tail-conf s))
+
+    (trivial-shell:shell-command (concatenate 'string "pdflatex "
+					      "-output-directory="
+					      root-dir "pdf/"
+					      " " complete-stream))
+    (setf (invoice-pdf-location invoice)
+	  (subseq completer-stream 70))))
 
 (defun format-description (b)
   (concatenate 'string
@@ -823,3 +843,4 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-price b) "}{}"))
     
 	 
+;;;--------------------------------------------------------------------
