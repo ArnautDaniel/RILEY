@@ -74,7 +74,9 @@
    (picture    :initarg :pictures
 		:accessor item-picture)
    (shows-on :initarg :shows-on
-	     :accessor item-shows-on)))
+	     :accessor item-shows-on)
+   (returned-on :initarg :returned-on
+		:accessor item-returned-on)))
 
 (defclass user ()
   ((name :initarg :name
@@ -406,6 +408,8 @@
 				    :id "item-table"
 				    (:input :type "hidden" :value (invoice-set-name invoice)
 					    :name "setname" :id "setname")
+				    (:input :type "hidden" :value (show-name invoice)
+					    :name "showname" :id "showname")
 				    (:button :type "submit" :class "btn btn-default btn-sm btn-info"
 					     "Check In")))))))))))
 (defmacro standard-item-list-table (&key invoice)
@@ -440,7 +444,41 @@
 			     (:input :type "hidden" :value ,invoice
 				     :name "invoice" :id "invoice")
 			     (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove")))))))))))
-			     
+
+(defmacro standard-check-in (&key invoice)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "panel panel-default"
+	   (:div :class "panel-body"
+		 (:table :class "table"
+			 (:thead
+			  (:tr
+			   (:th "Picture")
+			   (:th "Description")
+			   (:th "Quantity")
+			   (:th "Price")
+			   (:th "Check in?")))
+			 (:tbody
+			  (dolist (item (invoice-item-list ,invoice))
+			    (htm
+			     (:tr
+			      (:td (:img :src (item-picture item) :class "img-responsive"))
+			      (:td (fmt "~A" (escape-string (item-description item))))
+			      (:td (fmt "~A" (escape-string (item-quantity item))))
+			      (:td (fmt "~A" (escape-string (item-price item))))
+			      (:td
+			       (:form :class "form-inline"
+					  :action "/check-in-item"
+					  :method "POST"
+					  :id "check-in-table"
+					 
+					  (:input :type "hidden" :name "item-price" :id "item-price"
+						  :value (item-price item))
+					  (:input :type "hidden" :name "item-desc" :id "item-desc"
+						  :value (item-description item))
+					  (:input :type "hidden" :name "item-qty" :id "item-qty"
+						  :value (item-quantity item))
+					  (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Check in"))))))))))))
+		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -612,6 +650,15 @@
   (standard-page (:title "Check in list")
     (standard-check-in-showlist)))
 
+(define-easy-handler (checkinset :uri "/check-in-set") ()
+  (let* ((showname (hunchentoot:post-parameter "showname"))
+	 (setname (hunchentoot:post-parameter "setname")))
+    (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+    (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice"))))
+      (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
+	(standard-navbar)
+	(standard-check-in :invoice invoice)))))
+        
 (define-easy-handler (createpdf :uri "/createpdf") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (root-dir (invoice-root-dir invoice)))
