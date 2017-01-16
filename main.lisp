@@ -202,7 +202,12 @@
     (first (remove-if-not (lambda (x)
 		     (and (string= setname (invoice-set-name x))
 			  (string= showname (show-name x))))
-		   *global-invoice-list*))))
+			  *global-invoice-list*))))
+
+(defun remove-returned (inv-itemlist)
+  (remove-if-not (lambda (x)
+	       (string= "" (item-returned-on x)))
+	     inv-itemlist))
 
 (defun find-invoice-from-invoice (inv)
   (let ((setname (invoice-set-name inv))
@@ -458,7 +463,7 @@
 			   (:th "Price")
 			   (:th "Check in?")))
 			 (:tbody
-			  (dolist (item (invoice-item-list ,invoice))
+			  (dolist (item (remove-returned (invoice-item-list ,invoice)))
 			    (htm
 			     (:tr
 			      (:td (:img :src (item-picture item) :class "img-responsive"))
@@ -566,6 +571,20 @@
     (standard-dashboard :messages (standard-global-messages)))
   (redirect "/login"))))
 
+(define-easy-handler (check-in-item :uri "/check-in-item") ()
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (item-desc (hunchentoot:post-parameter "item-desc"))
+	 (item-price (hunchentoot:post-parameter "item-price"))
+	 (item-qty (hunchentoot:post-parameter "item-qty"))
+	 (item (first (remove-if-not #'(lambda (x)
+							 (and (string= (item-description x) item-desc)
+							      (string= (item-price x) item-price)
+							      (string= (item-quantity x) item-qty))) (invoice-item-list invoice)))))
+
+    (setf  (item-returned-on item)
+	   "1/16")
+  (redirect "/checkinlist")))
+	    
 (define-easy-handler (displayimagegot :uri "/displayimagegot") ()
   (let ((whatever (loop for post-parameter in (hunchentoot:post-parameters*)
 		     if (equal (car post-parameter) "picture-batch")
@@ -619,7 +638,8 @@
     (push (make-instance 'item :description description
 			 :quantity qty
 			 :price price
-			 :pictures image)
+			 :pictures image
+			 :returned-on "")
 	  (invoice-item-list invoice)))
   (redirect "/setthemcookies"))
 
@@ -920,7 +940,8 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-description b)
 	       "}{"
 	       (item-quantity b) "}{"
-	       (item-price b) "}{}"))
+	       (item-price b) "}{"
+	       (item-returned-on b) "}"))
     
 	 
 ;;;--------------------------------------------------------------------

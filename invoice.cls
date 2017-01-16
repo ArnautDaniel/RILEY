@@ -65,10 +65,10 @@
 %-----------------------------------
 \newenvironment{invoiceTable}{
     % Create a new row from title, unit quantity, unit rate, and unit name
-    \newcommand*{\unitrow}[4]{%
+    \newcommand*{\unitrow}[5]{%
          \addtocounter{cost}{1000 * \real{##2} * \real{##3}}%
          \addtocounter{subcost}{1000 * \real{##2} * \real{##3}}%
-        \stepcounter{rowno} \therowno & ##1 & ##2 ##4 & \$\formatNumber{##3} & & &
+        \stepcounter{rowno} \therowno & ##1 & ##2 ##4 & \$\formatNumber{##3} & & ##5 &
          \\
     }
 
