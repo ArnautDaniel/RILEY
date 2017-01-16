@@ -4,7 +4,8 @@
 	:cl-who
 	:cl-pass
 	:hunchentoot
-	:parenscript))
+	:parenscript
+	:trivial-shell))
 
 (defvar *current-message-list* '())
 (defvar *global-invoice-list* '())
@@ -219,14 +220,16 @@
 			   set-name
 			   show-name
 			   contact-name
-			   root-dir)
+			   root-dir
+			   pdf-location)
   (push (make-instance 'invoice
 		       :id-num id-num
 		       :set-name set-name
 		       :show-name show-name
 		       :contact-name contact-name
 		       :itemlist '()
-		       :root-dir root-dir) *global-invoice-list*))
+		       :root-dir root-dir
+		       :pdf-location pdf-location) *global-invoice-list*))
 
 ;;; Webserver functions and scaffolding
 ;;;Set HTML5 preamble
@@ -277,7 +280,8 @@
 			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile"))
 			    (:li (:a :href "/write-order" "Write Order")))
 		       (:ul :class "nav navbar-nav navbar-right"
-			    (:li (:a :href "/signout" "Sign out"))))))))
+			    (:li (:a :href "/signout" "Sign out"))
+			    (:li (:a :href "/checkinlist" "Check In"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -379,7 +383,31 @@
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
 				 (:img :src image :class "img-responsive"))))))))
-
+(defmacro standard-check-in-showlist ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "container panel panel-default"
+	   (:table :class "table table-bordered table-striped"
+		   (:thead
+		    (:tr
+		     (:th "Show Name")
+		     (:th "Set Name")
+		     (:th "Contact")
+		     (:th "Check In")))
+		   (:tbody
+		    (dolist (invoice *global-invoice-list*)
+		      (htm
+		       (:tr
+			(:td (fmt "~A" (escape-string (show-name invoice))))
+			(:td (fmt "~A" (escape-string (invoice-set-name invoice))))
+			(:td (fmt "~A" (escape-string (invoice-contact-name invoice))))
+			(:td (:form :class "form-inline"
+				    :action "/check-in-set"
+				    :method "POST"
+				    :id "item-table"
+				    (:input :type "hidden" :value (invoice-set-name invoice)
+					    :name "setname" :id "setname")
+				    (:button :type "submit" :class "btn btn-default btn-sm btn-info"
+					     "Check In")))))))))))
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "container panel panel-default"
@@ -468,7 +496,8 @@
 		      :set-name setname
 		      :show-name showname
 		      :contact-name contact
-		      :root-dir root-dir)
+		      :root-dir root-dir
+		      :pdf-location '())
     (set-cookie "current-invoice" :value  *global-invoice-id*)
   (register-message :sender "Global Messages" :recipient "global"
 		    :content (concatenate 'string "An order has been started for " showname
@@ -578,6 +607,10 @@
   (mapcar #'(lambda (x)
 	      (item-picture x))
 	  (invoice-item-list invoice)))
+
+(define-easy-handler (checkinlist :uri "/checkinlist") ()
+  (standard-page (:title "Check in list")
+    (standard-check-in-showlist)))
 
 (define-easy-handler (createpdf :uri "/createpdf") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
