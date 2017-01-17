@@ -256,17 +256,20 @@
 	     (:meta :name "viewport" :content "width=device-width, initial-scale=1")
 	     (:link :rel "stylesheet"
 		    :type "text/css"
-		    :href "css/bootstrap.css")
+		    :href "dist/css/sb-admin-2.css")
+	     (:script :src "js/bootstrap.js")
+	     (:script :src "js/sb-admin-2.js")
+	     (:script :src "vendor/jquery/jquery.js")
+	     (:link :type "text/css" :rel "stylesheet"
+		    :href "vendor/metisMenu/metisMenu.css")
+	     (:script :src "vendor/metisMenu/metisMenu.js")
 	     (:title ,title)
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "css/bootstrap-theme.css")
+		    :href "vendor/bootstrap/css/bootstrap.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "css/style.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "css/simple-sidebar.css"))
+		    :href "custom/style.css"))
 	    (:body
 	    
 	     ,@body))))
@@ -294,15 +297,16 @@
 			    (:li (:a :href "/checkinlist" "Check In"))))))))
 (defmacro test-sidebar ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :id "wrapper"
-	   (:div :id "sidebar-wrapper"
-		 (:ul :class "sidebar-nav"
-		      (:li :class "sidebar-brand"
-			   (:a :href "#"
-			       "RILEY"))
-		      (:li
-		       (:a :href "/dashboard"
-			   "Dashboard")))))))
+     (:div :id "nav-side-menu"
+	   (:div :class "brand" "RILEY")
+	   (:i :class "fa fa-bars fa-2x toggle-btn" :data-toggle "collapse"
+	       :data-target "menu-content")
+	   (:div :class "menu-list"
+		 (:ul :id "menu-content" :class "menu-content collapse out"
+		      (:li (:a :href "#"
+			       (:i :class "fa fa-dashboard fa-lg") "Dashboard"))
+		      (:li :data-toggle "collapse" :data-target "#writeorder" :class "collapsed active"
+			   (:a :href "#" (:i :class "fa fa-gift fa-lg") "UI Elements" (:span :class "arrow"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -722,7 +726,7 @@
 	 (images-filtered (filter-already-in-itemlist images invoice)))
     
   (standard-page (:title "Order Writeup")
-    (test-sidebar)
+    (standard-navbar)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
 			      :set (fmt "Setname: ~A" (escape-string setname))
 			      :contact (fmt "Contact: ~A" (escape-string contact))
