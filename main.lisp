@@ -263,7 +263,10 @@
 		    :href "css/bootstrap-theme.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "css/style.css"))
+		    :href "css/style.css")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "css/simple-sidebar.css"))
 	    (:body
 	    
 	     ,@body))))
@@ -289,6 +292,17 @@
 		       (:ul :class "nav navbar-nav navbar-right"
 			    (:li (:a :href "/signout" "Sign out"))
 			    (:li (:a :href "/checkinlist" "Check In"))))))))
+(defmacro test-sidebar ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :id "wrapper"
+	   (:div :id "sidebar-wrapper"
+		 (:ul :class "sidebar-nav"
+		      (:li :class "sidebar-brand"
+			   (:a :href "#"
+			       "RILEY"))
+		      (:li
+		       (:a :href "/dashboard"
+			   "Dashboard")))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -408,7 +422,7 @@
 			(:td (fmt "~A" (escape-string (invoice-set-name invoice))))
 			(:td (fmt "~A" (escape-string (invoice-contact-name invoice))))
 			(:td (:form :class "form-inline"
-				    :action "/check-in-set"
+				    :action "/check-in-set-pre"
 				    :method "POST"
 				    :id "item-table"
 				    (:input :type "hidden" :value (invoice-set-name invoice)
@@ -582,8 +596,9 @@
 							      (string= (item-quantity x) item-qty))) (invoice-item-list invoice)))))
 
     (setf  (item-returned-on item)
-	   "1/16")
-  (redirect "/checkinlist")))
+	   "1/17")
+    (createpdf2)
+  (redirect "/check-in-set")))
 	    
 (define-easy-handler (displayimagegot :uri "/displayimagegot") ()
   (let ((whatever (loop for post-parameter in (hunchentoot:post-parameters*)
@@ -668,22 +683,34 @@
 
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
+    (standard-navbar)
     (standard-check-in-showlist)))
 
+(define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") ()
+    (let* ((showname (hunchentoot:post-parameter "showname"))
+	   (setname (hunchentoot:post-parameter "setname")))
+      (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+      (redirect "/check-in-set")))
+
 (define-easy-handler (checkinset :uri "/check-in-set") ()
-  (let* ((showname (hunchentoot:post-parameter "showname"))
-	 (setname (hunchentoot:post-parameter "setname")))
-    (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
-    (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice"))))
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	(showname (show-name invoice))
+	(setname (invoice-set-name invoice)))
       (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
 	(standard-navbar)
-	(standard-check-in :invoice invoice)))))
+	(standard-check-in :invoice invoice))))
         
 (define-easy-handler (createpdf :uri "/createpdf") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (root-dir (invoice-root-dir invoice)))
     (generate-latex invoice root-dir))
   (redirect "/setthemcookies"))
+
+(define-easy-handler (createpdf2 :uri "/createpdf2") ()
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (root-dir (invoice-root-dir invoice)))
+    (generate-latex invoice root-dir))
+  (redirect "/check-in-set"))
 
 ;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
@@ -695,8 +722,7 @@
 	 (images-filtered (filter-already-in-itemlist images invoice)))
     
   (standard-page (:title "Order Writeup")
-   
-    (standard-navbar)
+    (test-sidebar)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
 			      :set (fmt "Setname: ~A" (escape-string setname))
 			      :contact (fmt "Contact: ~A" (escape-string contact))
