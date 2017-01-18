@@ -204,11 +204,14 @@
 			  (string= showname (show-name x))))
 			  *global-invoice-list*))))
 
+;;;If an item already has a return date remove it from the check-in list
+;;;before passing the data to the check-in page
 (defun remove-returned (inv-itemlist)
   (remove-if-not (lambda (x)
 	       (string= "" (item-returned-on x)))
 	     inv-itemlist))
 
+;;;Helper function rarely used.  Finds an invoice from a make instanced invoice
 (defun find-invoice-from-invoice (inv)
   (let ((setname (invoice-set-name inv))
 	(showname (show-name inv)))
@@ -216,6 +219,19 @@
 			    (and (string= setname (invoice-set-name x))
 				 (string= showname (show-name x))))
 			  *global-invoice-list*))))
+
+;;;If an picture is already in the itemlist then remove it
+;;;before sending it to the write-order page
+(defun filter-already-in-itemlist (images invoice)
+  (let ((itemlist (itemlist-image-location invoice)))
+    (set-difference images itemlist
+		    :test #'string=)))
+
+;;;Helper function for grabbing image location
+(defun itemlist-image-location (invoice)
+  (mapcar #'(lambda (x)
+	      (item-picture x))
+	  (invoice-item-list invoice)))
 
 ;;;Search the *GLOBAL-INVOICE-LIST* for INVOICENAME
 (defun find-invoice (invoicename)
@@ -237,6 +253,29 @@
 		       :itemlist '()
 		       :root-dir root-dir
 		       :pdf-location pdf-location) *global-invoice-list*))
+
+;;;USED ALOT.  Lets you find an invoice on the global invoice list
+;;;from the *showname*-*setname* form of a cookie string.
+(defun find-invoice-from-cookie (invoice-string)
+  (if (not (string= "none" invoice-string))
+  (let* ((magic-number (search "-" invoice-string))
+	 (showname (subseq invoice-string 0 magic-number))
+	 (setname (subseq invoice-string (+ magic-number 1)))
+	 (temp-invoice (make-instance 'invoice :show-name showname
+				      :set-name setname)))
+    (find-invoice-from-invoice temp-invoice))))
+
+;;;Helper function for moving uploaded pictures to the correct directory
+;;;Needs to delete the pictures after and be expanded.
+(defun move-image-to-invoice-dir (img-data)
+  (let* ((current-invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (invoice-location (invoice-root-dir current-invoice))
+	 (temp-image-directory "/tmp/")
+	 (image-name (third img-data)))
+    (cl-fad:copy-file (make-pathname :directory temp-image-directory
+				     :name image-name)
+		      (make-pathname :directory invoice-location
+				     :name image-name))))
 
 ;;; Webserver functions and scaffolding
 ;;;Set HTML5 preamble
@@ -291,22 +330,11 @@
 		       (:ul :class "nav navbar-nav"
 			    (:li (:a :href "/dashboard" "Timeline"))
 			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile"))
-			    (:li (:a :href "/write-order" "Write Order")))
+			    (:li (:a :href "/write-order" "Write Order"))
+			    (:li (:a :href "/check-in-order" "Check-in Order")))
 		       (:ul :class "nav navbar-nav navbar-right"
 			    (:li (:a :href "/signout" "Sign out"))
 			    (:li (:a :href "/checkinlist" "Check In"))))))))
-(defmacro test-sidebar ()
-  `(with-html-output (*standard-output* nil :indent t)
-     (:div :id "nav-side-menu"
-	   (:div :class "brand" "RILEY")
-	   (:i :class "fa fa-bars fa-2x toggle-btn" :data-toggle "collapse"
-	       :data-target "menu-content")
-	   (:div :class "menu-list"
-		 (:ul :id "menu-content" :class "menu-content collapse out"
-		      (:li (:a :href "#"
-			       (:i :class "fa fa-dashboard fa-lg") "Dashboard"))
-		      (:li :data-toggle "collapse" :data-target "#writeorder" :class "collapsed active"
-			   (:a :href "#" (:i :class "fa fa-gift fa-lg") "UI Elements" (:span :class "arrow"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -408,6 +436,7 @@
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
 				 (:img :src image :class "img-responsive"))))))))
+
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "container panel panel-default"
@@ -435,6 +464,7 @@
 					    :name "showname" :id "showname")
 				    (:button :type "submit" :class "btn btn-default btn-sm btn-info"
 					     "Check In")))))))))))
+
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "container panel panel-default"
@@ -543,6 +573,9 @@
 
 ;;;Define page handler functions
 
+;;;This handles adding a newly created invoice to the global invoice list
+;;;This should be expanded to add logging of which user added which order/invoice
+;;;also invoice id numbers need to be worked out
 (define-easy-handler (createInvoice :uri "/createInvoice") ()
   (let* ((showname (hunchentoot:post-parameter "inputShowname"))
 	(setname (hunchentoot:post-parameter "inputSetname"))
@@ -566,12 +599,16 @@
 					   " ordered by " contact )
 		    :invoice-name (list setname showname contact *global-invoice-id*)))
   (redirect "/dashboard"))
-		      
+
+;;;Basic function to create a new show		      
 (define-easy-handler (write-order :uri "/write-order") ()
   (standard-page (:title "Write Order")
     (standard-navbar)
     (standard-order-intro)))
 
+;;;Adds a message to the global message list
+;;;This can be a notification for a new order/show/invoice
+;;;or a message posted by a user
 (define-easy-handler (addmessage :uri "/addmessage") ()
   (let ((username (cookie-in "current-user"))
 	(message (hunchentoot:post-parameter "message")))
@@ -580,6 +617,7 @@
 		      :content message))
   (redirect "/dashboard"))
 
+;;;Standard dashboard
 (define-easy-handler (dashboard :uri "/dashboard") ()
   (set-cookie "current-invoice" :value "none")
   (let ((username (cookie-in "current-user")))
@@ -589,6 +627,8 @@
     (standard-dashboard :messages (standard-global-messages)))
   (redirect "/login"))))
 
+;;;This function needs to be redone.  Currently it takes the post parameters of the item
+;;;associated with an invoice and finds which item it is in the itemlist;  current date needs to be fixed
 (define-easy-handler (check-in-item :uri "/check-in-item") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item-desc (hunchentoot:post-parameter "item-desc"))
@@ -603,7 +643,8 @@
 	   "1/17")
     (createpdf2)
   (redirect "/check-in-set")))
-	    
+
+;;;This function has some leftover cruft that needs to be refactored.
 (define-easy-handler (displayimagegot :uri "/displayimagegot") ()
   (let ((whatever (loop for post-parameter in (hunchentoot:post-parameters*)
 		     if (equal (car post-parameter) "picture-batch")
@@ -623,31 +664,17 @@
 	    whatever)))
   (redirect "/setthemcookies"))
 
-(defun find-invoice-from-cookie (invoice-string)
-  (if (not (string= "none" invoice-string))
-  (let* ((magic-number (search "-" invoice-string))
-	 (showname (subseq invoice-string 0 magic-number))
-	 (setname (subseq invoice-string (+ magic-number 1)))
-	 (temp-invoice (make-instance 'invoice :show-name showname
-				      :set-name setname)))
-    (find-invoice-from-invoice temp-invoice))))
-    
-(defun move-image-to-invoice-dir (img-data)
-  (let* ((current-invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
-	 (invoice-location (invoice-root-dir current-invoice))
-	 (temp-image-directory "/tmp/")
-	 (image-name (third img-data)))
-    (cl-fad:copy-file (make-pathname :directory temp-image-directory
-				     :name image-name)
-		      (make-pathname :directory invoice-location
-				     :name image-name))))
-
+;;;Current solution to being able to refresh pages without putting data in the URI
+;;;May need to start putting data in the URI but the function works pretty decently already.
 (define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") ()
   (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
 						    "-"
 						    (hunchentoot:post-parameter "setname")))
   (redirect "/setthemcookies"))
 
+;;;Adds an item from the additem panel on the write order page
+;;;Absolutely needs javascript to test for the following conditions
+;;;Empty input boxes;  Invalid input; and removing the pdf glitch
 (define-easy-handler (add-item :uri "/additem") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (description (hunchentoot:post-parameter "input-item-description"))
@@ -662,6 +689,7 @@
 	  (invoice-item-list invoice)))
   (redirect "/setthemcookies"))
 
+;;;Removes an item from the invoice.  Searches very basically.  Should probably have an item id
 (define-easy-handler (remove-item :uri "/removeitem") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item (hunchentoot:post-parameter "item"))
@@ -675,27 +703,20 @@
 						     (invoice-item-list invoice))))
   (redirect "/setthemcookies"))
 
-(defun filter-already-in-itemlist (images invoice)
-  (let ((itemlist (itemlist-image-location invoice)))
-    (set-difference images itemlist
-		    :test #'string=)))
-
-(defun itemlist-image-location (invoice)
-  (mapcar #'(lambda (x)
-	      (item-picture x))
-	  (invoice-item-list invoice)))
-
+;;;Standard check in page that displays a table of shows with invoices
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
     (standard-navbar)
     (standard-check-in-showlist)))
 
+;;;Required to get around the refresh problem.  Will need to expand solution
 (define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") ()
     (let* ((showname (hunchentoot:post-parameter "showname"))
 	   (setname (hunchentoot:post-parameter "setname")))
       (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
       (redirect "/check-in-set")))
 
+;;;Presents a table of items that have not been checked in yet
 (define-easy-handler (checkinset :uri "/check-in-set") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	(showname (show-name invoice))
@@ -703,13 +724,17 @@
       (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
 	(standard-navbar)
 	(standard-check-in :invoice invoice))))
-        
+
+;;;Provides all the abstraction for generating a pdf from an invoice
+;;;as long as a valid invoice is sent
+;;;Might want a defun version instead so it doesn't route to a uri
 (define-easy-handler (createpdf :uri "/createpdf") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (root-dir (invoice-root-dir invoice)))
     (generate-latex invoice root-dir))
   (redirect "/setthemcookies"))
 
+;;;Cruft
 (define-easy-handler (createpdf2 :uri "/createpdf2") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (root-dir (invoice-root-dir invoice)))
@@ -727,13 +752,14 @@
     
   (standard-page (:title "Order Writeup")
     (standard-navbar)
+    (standard-picture-upload)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
 			      :set (fmt "Setname: ~A" (escape-string setname))
 			      :contact (fmt "Contact: ~A" (escape-string contact))
 			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
    									      "-" setname)))))
     (standard-item-writeup :image (first images-filtered))
-    (standard-picture-upload)
+   
     (standard-item-list-table :invoice invoice)
     (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
     (standard-picture-table :image-list (rest images-filtered)))))
@@ -787,6 +813,7 @@
 	     (redirect "/login"))
 	(redirect "/badpassword"))))
 
+;;;For the love of McCarthy please turn this into a macro already
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
     (:div :id "landing"
@@ -973,5 +1000,6 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-price b) "}{"
 	       (item-returned-on b) "}"))
     
-	 
+;;;Alot of the latex code was ported from the racket version and has already been tested alot
+;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
