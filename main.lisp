@@ -302,6 +302,7 @@
 	     (:link :type "text/css" :rel "stylesheet"
 		    :href "vendor/metisMenu/metisMenu.css")
 	     (:script :src "vendor/metisMenu/metisMenu.js")
+	     (:script :src "vendor/metisMenu/metisMenu.min.js")
 	     (:title ,title)
 	     (:link :type "text/css"
 		    :rel "stylesheet"
@@ -310,7 +311,6 @@
 		    :rel "stylesheet"
 		    :href "custom/style.css"))
 	    (:body
-	    
 	     ,@body))))
 
 (defmacro standard-navbar ()
@@ -378,16 +378,17 @@
 
 (defmacro standard-item-writeup (&key image)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
-	   (:div :class "panel-body"
+     (:div :class "panel panel-default login-panel"
+	   (:div :class "panel-head"
 		 (:div :class "col-md-3 col-sm-4 col-xs-6"
-				    (:img :src ,image :class "img-responsive"))
+		       (:img :src ,image :class "img-responsive")))
+		 (:div :class  "panel-body"
 		 (:form :class "form-inline"
 			:action "/additem"
 			:method "POST"
 			:id "New-item"
 			(:div :class "form-group"
-			      (:br)
+			     
 			      (:label :for "inputDesc" "Description")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-description" :placeholder "Item Description"
@@ -403,7 +404,7 @@
 				      :id "input-item-qty" :placeholder "Item Quantity"
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
-			(:br)
+	        
 			(:button :type "submit" :class "btn btn-default" "Add item"))))))
      
 			      
@@ -817,16 +818,13 @@
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
     (:div :id "landing"
-	  (:div :class "container-fluid"
-	  (:div :class "panel panel-default"
+	  (:div :class "container"
+	  (:div :class "login-panel panel panel-default"
 	  :id "welcome-panel"
 	  (:div :class "panel-heading"
-		(:h1 "Welcome to the RILEY Inventory System"))
-	  (:div :class "panel-body"
-		(:div :class "row"
-		(:div :class "col-md-6"
-		     
-			   
+		(:h1 "RILEY Inventory System"))
+	  (:div :class "row"
+	  (:div :class "panel-body"  
 	  (:form :action "/adduser"
 		 :method "POST"
 		 :id "commentform"
@@ -857,13 +855,13 @@
 			 :placeholder "Repeat Password"
 			 :name "password-repeat"
 			 :id "password-repeat"))
-		 
-		 (:center (:button :type "submit"
-			  :class "btn btn-primary"
-			  "Create Account"))))
+		  (:br)
+		  (:button :type "submit"
+			  :class "btn btn-primary btn-lg"
+			  "Create Account"))
     
-    (:div :class "col-md-6"
-	  (:div :id "form"
+    (:div :class  "row"
+	  (:div :id "form" :class "panel-body"
 	  (:form :action "/check-login"
 		 :method "POST"
 		 :id "commentform"
@@ -885,10 +883,10 @@
 			 :placeholder "Password"
 			 :name "password"
 			 :id "password"))
-		 
-		 (:center (:button :type "submit"
-			  :class "btn btn-primary"
-			  "Login"))))))))))))
+		 (:br)
+	         (:button :type "submit"
+			  :class "btn btn-primary btn-lg"
+			  "Login")))))))))))
 
 
 ;;;Latex constants---------------------------------------------------
