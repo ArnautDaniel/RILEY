@@ -308,12 +308,16 @@
 		    :href "dist/css/AdminLTE.min.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "dist/css/skins/skin-blue.min.cs")
+		    :href "dist/css/skins/_all-skins.min.css")
 	     (:title ,title)
 	    (:script :src "bootstrap/js/bootstrap.min.js")
 	    (:script :src "plugins/jQuery/jquery-2.2.3.min.js")
 	    (:script :src "dist/js/app.min.js")
-	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js"))
+	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
+	    (:script :src "plugins/fastclick/fastclick.js")
+	    (:script :src "plugins/datatables/jquery.dataTables.min.js")
+	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js"))
+	    
 	    (:body :class "hold-transition skin-blue fixed"
 		   (:div :class "wrapper"
 			 ,@navbar)
@@ -429,8 +433,15 @@
 			     (:p "Kek"))
 		       (:ul :class "sidebar-menu"
 			    (:li :class "header" "Essential")
-			    (:li :class "active" :a :href "/dashboard" (:i :class "fa fa-link"
-									   (:span "Dashboard"))))))))
+			    (:li :class "treeview active"
+				 (:a :href "/dashboard" (:i :class "fa fa-link")
+							    (:span "Dashboard")))
+			    (:li :class "treeview active"
+				 (:a :href "/write-order" (:i :class "fa fa-circle")
+				     (:span "Write Order")))
+			    (:li :class "treeview active"
+				 (:a :href "/checkinlist" (:i :class "fa fa-check-square")
+				     (:span "Check-in Order"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -475,33 +486,36 @@
 (defmacro standard-item-writeup (&key image)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default login-panel"
-	   (:div :class "panel-head"
-		 (:div :class "col-md-3 col-sm-4 col-xs-6"
-		       (:img :src ,image :class "img-responsive")))
-		 (:div :class  "panel-body"
-		 (:form :class "form-inline"
+	   (:div :class "box"
+		 
+		 (:div :class "box-header"
+		      (:center (:img :src ,image :class "img-responsive")))
+		 (:div :class  "box-body"
+		 (:form 
 			:action "/additem"
 			:method "POST"
 			:id "New-item"
-			(:div :class "form-group"
-			     
+			(:div :class "form-group has-feedback "
 			      (:label :for "inputDesc" "Description")
+			      (:span :class "form-control-feedback")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-description" :placeholder "Item Description"
-				      :name "input-item-description" :autofocus "autofocus")
-			      (:br)
+				      :name "input-item-description" :autofocus "autofocus"))
+			(:div :class "form-group has-feedback"
+			      (:span :class "form-control-feedback")
 			      (:label :for "inputPrice" "Price")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-price" :placeholder "Item Price"
-				      :name "input-item-price")
-			      (:br)
+				      :name "input-item-price"))
+			(:div :class "form-group has-feedback"
+			      (:span :class "form-control-feedback")
 			      (:label :for "inputQty" "Quantity")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-qty" :placeholder "Item Quantity"
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
-			(:button :type "submit" :class "btn btn-default" "Add item"))))))
+			(:button :type "submit" :class "btn btn-info btn-default btn-flat btn-block" "Add item")))))))
      
 			      
 				      
@@ -564,8 +578,11 @@
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default"
-	  (:table :class "table table-bordered table-striped"
+     (:div :class "box"
+	   (:div :class "box-header")
+		 
+     (:div :class "box-body"
+	  (:table :id "itemlist" :class "table table-bordered table-striped"
 		 (:thead
 		 
 		  (:tr
@@ -593,7 +610,10 @@
 				     :name "item-quantity" :id "item-quantity")
 			     (:input :type "hidden" :value ,invoice
 				     :name "invoice" :id "invoice")
-			     (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove")))))))))))
+			     (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))))))))
+	  (:script "$(\"#itemlist\").DataTable();")))))
+	  
+     
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
@@ -631,9 +651,10 @@
 		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
-	   (:div :class "panel-body"
-		 (:h3 "Upload pictures to this order:")
+     (:div :class "box box-success"
+	   (:div :class "box-header"
+		 (:h3 "Upload pictures to this order:"))
+	   (:div :class "box-body"
 		 (:form :action "/displayimagegot"
 			:class "form-inline"
 			:method "POST"
@@ -658,8 +679,8 @@
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
-	   (:div :class "panel-body"
+     (:div :class "box box-info"
+	   (:div :class "box-body"
 		 (:ul :class "list-group"
 		      (:li :class "list-group-item list-group-item-success" ,show)
 		      (:li :class "list-group-item list-group-item-danger" ,set)
@@ -700,7 +721,7 @@
 ;;;Basic function to create a new show		      
 (define-easy-handler (write-order :uri "/write-order") ()
   (standard-page (:title "Write Order")
-    (standard-navbar)
+    (:navbar (test-navbar))
     (standard-order-intro)))
 
 ;;;Adds a message to the global message list
@@ -720,7 +741,7 @@
   (let ((username (cookie-in "current-user")))
     (if (not (or (string= username "login") (string= username "")))
   (standard-page (:title "Dashboard")
-    (standard-navbar)
+   (:navbar  (test-navbar))
     (standard-dashboard :messages (standard-global-messages)))
   (redirect "/login"))))
 
@@ -803,7 +824,7 @@
 ;;;Standard check in page that displays a table of shows with invoices
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
-    (standard-navbar)
+    (:navbar (test-navbar))
     (standard-check-in-showlist)))
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
