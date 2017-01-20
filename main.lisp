@@ -310,13 +310,28 @@
 		    :rel "stylesheet"
 		    :href "dist/css/skins/_all-skins.min.css")
 	     (:title ,title)
+	    (:script :src "http://code.jquery.com/jquery-latest.min.js")
 	    (:script :src "bootstrap/js/bootstrap.min.js")
-	    (:script :src "plugins/jQuery/jquery-2.2.3.min.js")
+
 	    (:script :src "dist/js/app.min.js")
 	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
 	    (:script :src "plugins/fastclick/fastclick.js")
 	    (:script :src "plugins/datatables/jquery.dataTables.min.js")
-	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js"))
+	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js")
+	    (:link :rel "stylesheet" :type "text/css"
+		   :href "plugins/custom/fancybox/source/jquery.fancybox.css")
+	    (:script :src "plugins/custom/fancybox/source/jquery.fancybox.pack.js")
+	    (:script :src "plugins/custom/fancybox/lib/jquery.mousewheel.pack.js")
+	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-media.js")
+	    (:link :rel "stylesheet" :type "text/css"
+		   :href "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.css")
+	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.js")
+	    (:script "$(document).ready(function() {
+	$(\".fancybox\").fancybox({
+		openEffect	: 'none',
+		closeEffect	: 'none'
+	});
+});"))
 	    
 	    (:body :class "hold-transition skin-blue fixed"
 		   (:div :class "wrapper"
@@ -500,7 +515,7 @@
 			      (:span :class "form-control-feedback")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-description" :placeholder "Item Description"
-				      :name "input-item-description" :autofocus "autofocus"))
+				      :name "input-item-description"))
 			(:div :class "form-group has-feedback"
 			      (:span :class "form-control-feedback")
 			      (:label :for "inputPrice" "Price")
@@ -542,8 +557,8 @@
 
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default"
-	   (:div :class "row"
+     (:div :class "box"
+	   (:div :class "box-body"
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
 				 (:img :src image :class "img-responsive"))))))))
@@ -617,21 +632,27 @@
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
-	   (:div :class "panel-body"
-		 (:table :class "table"
+     (:div :class "box"
+	   (:div :class "box-body"
+		 (:table :id "checkinlist" :class "table table-bordered table-striped"
 			 (:thead
 			  (:tr
 			   (:th "Picture")
 			   (:th "Description")
-			   (:th "Quantity")
+			   (:th "QTY")
 			   (:th "Price")
-			   (:th "Check in?")))
+			   (:th "Check?")))
 			 (:tbody
 			  (dolist (item (remove-returned (invoice-item-list ,invoice)))
 			    (htm
+		
 			     (:tr
-			      (:td (:img :src (item-picture item) :class "img-responsive"))
+			      (:td (:a :class "fancybox"
+				       :id "fancybox"
+				       :rel "gallery1"
+				       :href (item-picture item)
+				       (:img :src (item-picture item) :class "img-responsive")))
+					       
 			      (:td (fmt "~A" (escape-string (item-description item))))
 			      (:td (fmt "~A" (escape-string (item-quantity item))))
 			      (:td (fmt "~A" (escape-string (item-price item))))
@@ -647,7 +668,9 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Check in"))))))))))))
+					  (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Check in"))))))))
+		 (:script "$(\"#checkinlist\").DataTable();")))))
+		 
 		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -671,11 +694,16 @@
 
 (defmacro standard-pdf-iframe (&key pdf)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-body"
+     (:div :class "box box-default"
+	   (:div :class "box-header with-border"
+		 "PDF"
+	   (:div :class "box-tools pull-right"
+		 (:button :class "btn btn-box-tool" :data-widget "collapse" (:i :class "fa fa-plus"))))
+	   (:div :class "box-body"
 	   (:iframe :id "iframepdf"
 		    :height "600"
 		    :width "100%"
-		    :src ,pdf))))
+		    :src ,pdf)))))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
@@ -687,7 +715,9 @@
 		      (:li :class "list-group-item list-group-item-success" ,contact)
 		      (:li :class "list-group-item list-group-item-danger" ,pic-num))
 		 (:a :href "/createpdf" (:button :type "submit" :class "btn btn-default btn-sm btn-info"
-						 "Create PDF"))))))
+						 "Create PDF"))
+		 (:a :href "/check-in-set" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Check-in Items"))
+		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Invoice homepage"))))))
 
 ;;;Define page handler functions
 
@@ -840,8 +870,10 @@
 	(showname (show-name invoice))
 	(setname (invoice-set-name invoice)))
       (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
-	(standard-navbar)
+        (:navbar (test-navbar))
+	(standard-invoice-writing)
 	(standard-check-in :invoice invoice))))
+	
 
 ;;;Provides all the abstraction for generating a pdf from an invoice
 ;;;as long as a valid invoice is sent
