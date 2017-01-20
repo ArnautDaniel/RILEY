@@ -287,31 +287,116 @@
 ;;;Macro's for generating HTML
 ;;;Macros should be designed to work together so pages
 ;;;can be as modular as possible.
-(defmacro standard-page ((&key title) &body body)
+
+(defmacro standard-page ((&key title navbar) &body body)
   `(with-html-output-to-string
        (*standard-output* nil :prologue t :indent t)
      (:html :lang "en"
 	    (:head
-	     (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-	     (:link :rel "stylesheet"
-		    :type "text/css"
-		    :href "dist/css/sb-admin-2.css")
-	     (:script :src "js/bootstrap.js")
-	     (:script :src "js/sb-admin-2.js")
-	     (:script :src "vendor/jquery/jquery.js")
-	     (:link :type "text/css" :rel "stylesheet"
-		    :href "vendor/metisMenu/metisMenu.css")
-	     (:script :src "vendor/metisMenu/metisMenu.js")
-	     (:script :src "vendor/metisMenu/metisMenu.min.js")
+	     (:meta :name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "bootstrap/css/bootstrap.min.css")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "dist/css/AdminLTE.min.css")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "dist/css/skins/skin-blue.min.cs")
 	     (:title ,title)
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "vendor/bootstrap/css/bootstrap.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "custom/style.css"))
-	    (:body
-	     ,@body))))
+	    (:script :src "bootstrap/js/bootstrap.min.js")
+	    (:script :src "plugins/jQuery/jquery-2.2.3.min.js")
+	    (:script :src "dist/js/app.min.js")
+	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js"))
+	    (:body :class "hold-transition skin-blue fixed"
+		   (:div :class "wrapper"
+			 ,@navbar)
+		   (:div :class "content-wrapper"
+			 (:section :class "content"
+	     ,@body))))))
+
+(defmacro standard-login ()
+  `(with-html-output (*standard-output* nil :indent t)
+       
+ (:div :class "register-page"
+	  (:div :class "register-box"
+		
+	  (:div :class "register-logo"
+		(:b "RILEY Inventory System"))
+	  
+	  (:div :class "register-box-body"
+	  (:p :class "login-box-msg" "Register a new account")
+	  (:form :action "/adduser"
+		 :method "POST"
+		 :id "commentform"
+		 (:div :class "form-group has-feedback"
+		 (:span :class "form-control-feedback"
+			:id "basic-addon1" "@")
+		 (:input :type "text"
+			 :class "form-control"
+			 :placeholder "Username"
+			 :name "username"
+			 :aria-describedby "basic-addon1"
+			 :id "username"))
+		 (:div :class "form-group has-feedback"
+		       (:span :class "form-control-feedback"
+			      :id "basic-addon1" "$")      
+		 (:input :type "password"
+			 :placeholder "Password"
+			 :name "password"
+			 :class "form-control"
+			 :aria-describedby "basic-addon1"
+			 :id "password"))
+		 
+		 (:div :class "form-group has-feedback"
+		       (:span :class "form-control-feedback"
+			      :id "basic-addon1" "$")
+		       (:input :type "password"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
+			 :placeholder "Repeat Password"
+			 :name "password-repeat"
+			 :id "password-repeat"))
+	        
+	        
+		  (:button :type "submit"
+			  :class "btn btn-primary btn-block btn-flat"
+			  "Create Account")))
+    
+	  (:div :class "register-box-body"
+        
+	  (:form :action "/check-login"
+		 :method "POST"
+		 :id "commentform"
+		 (:div :class "form-group has-feedback"
+		       (:span :class "form-control-feedback"
+			      :id "basic-addon1" "@")
+		       (:input :type "text"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
+			 :placeholder "Username"
+			 :name "username"
+			 :id "username"))
+		 (:div :class "form-group has-feedback"
+		      
+		       (:input :type "password"
+			       :class "form-control"
+			       :aria-describedby "basic-addon1"
+			 :placeholder "Password"
+			 :name "password"
+			 :id "password")
+		        (:span :class "form-control-feedback"
+			      :id "basic-addon1" "$"))
+	        
+	         (:button :type "submit"
+			  :class "btn btn-primary btn-flat btn-block"
+			  "Login")))))))
 
 (defmacro standard-navbar ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -335,6 +420,17 @@
 		       (:ul :class "nav navbar-nav navbar-right"
 			    (:li (:a :href "/signout" "Sign out"))
 			    (:li (:a :href "/checkinlist" "Check In"))))))))
+
+(defmacro test-navbar ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:aside :class "main-sidebar"
+	     (:section :class "sidebar"
+		       (:div :class "user-panel"
+			     (:p "Kek"))
+		       (:ul :class "sidebar-menu"
+			    (:li :class "header" "Essential")
+			    (:li :class "active" :a :href "/dashboard" (:i :class "fa fa-link"
+									   (:span "Dashboard"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -752,7 +848,8 @@
 	 (images-filtered (filter-already-in-itemlist images invoice)))
     
   (standard-page (:title "Order Writeup")
-    (standard-navbar)
+  
+    (:navbar (test-navbar))
     (standard-picture-upload)
     (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
 			      :set (fmt "Setname: ~A" (escape-string setname))
@@ -817,76 +914,7 @@
 ;;;For the love of McCarthy please turn this into a macro already
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
-    (:div :id "landing"
-	  (:div :class "container"
-	  (:div :class "login-panel panel panel-default"
-	  :id "welcome-panel"
-	  (:div :class "panel-heading"
-		(:h1 "RILEY Inventory System"))
-	  (:div :class "row"
-	  (:div :class "panel-body"  
-	  (:form :action "/adduser"
-		 :method "POST"
-		 :id "commentform"
-		 (:div :class "input-group"
-		 (:span :class "input-group-addon"
-			:id "basic-addon1" "@")
-		 (:input :type "text"
-			 :class "form-control"
-			 :placeholder "Username"
-			 :name "username"
-			 :aria-describedby "basic-addon1"
-			 :id "username"))
-		 (:div :class "input-group"
-		       (:span :class "input-group-addon"
-			      :id "basic-addon1" "$")
-		 (:input :type "password"
-			 :placeholder "Password"
-			 :name "password"
-			 :class "form-control"
-			 :aria-describedby "basic-addon1"
-			 :id "password"))
-		 (:div :class "input-group"
-		       (:span :class "input-group-addon"
-			      :id "basic-addon1" "$")
-		       (:input :type "password"
-			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Repeat Password"
-			 :name "password-repeat"
-			 :id "password-repeat"))
-		  (:br)
-		  (:button :type "submit"
-			  :class "btn btn-primary btn-lg"
-			  "Create Account"))
-    
-    (:div :class  "row"
-	  (:div :id "form" :class "panel-body"
-	  (:form :action "/check-login"
-		 :method "POST"
-		 :id "commentform"
-		 (:div :class "input-group"
-		       (:span :class "input-group-addon"
-			      :id "basic-addon1" "@")
-		       (:input :type "text"
-			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Username"
-			 :name "username"
-			 :id "username"))
-		 (:div :class "input-group"
-		       (:span :class "input-group-addon"
-			      :id "basic-addon1" "$")
-		       (:input :type "password"
-			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Password"
-			 :name "password"
-			 :id "password"))
-		 (:br)
-	         (:button :type "submit"
-			  :class "btn btn-primary btn-lg"
-			  "Login")))))))))))
+   (standard-login)))
 
 
 ;;;Latex constants---------------------------------------------------
