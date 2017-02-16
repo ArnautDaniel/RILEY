@@ -312,7 +312,6 @@
 	     (:title ,title)
 	    (:script :src "http://code.jquery.com/jquery-latest.min.js")
 	    (:script :src "bootstrap/js/bootstrap.min.js")
-
 	    (:script :src "dist/js/app.min.js")
 	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
 	    (:script :src "plugins/fastclick/fastclick.js")
@@ -445,7 +444,11 @@
      (:aside :class "main-sidebar"
 	     (:section :class "sidebar"
 		       (:div :class "user-panel"
-			     (:p "Kek"))
+			     (:div :class "pull-left image"
+				   (:img :class "img-circle" :src "img/littlec.jpg"))
+			     (:div :class "pull-left info" (:p "CAPS USER")
+			     (:a :href "#" (:i :class "fa fa-circle text-success") "Online")))
+		       
 		       (:ul :class "sidebar-menu"
 			    (:li :class "header" "Essential")
 			    (:li :class "treeview active"
@@ -456,7 +459,10 @@
 				     (:span "Write Order")))
 			    (:li :class "treeview active"
 				 (:a :href "/checkinlist" (:i :class "fa fa-check-square")
-				     (:span "Check-in Order"))))))))
+				     (:span "Check-in Order")))
+			    (:li :class "treeview active"
+				 (:a :href "/signout" (:i :class "fa fa-sign-out")
+				     (:span "Sign Out"))))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
@@ -472,17 +478,23 @@
 			      (:input :type "text" :class "form-control"
 				      :id "message" :name "message"
 				      :placeholder "Post a message")
-			      (:button :type "Submit Message" :class "btn btn-default" "Message"))))
-	   (:div :class "panel-body"
-		 ,messages))))
+			      (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))
+	   
+		 ,messages))
 
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
+   
+     (:ul :class "timeline"
+	  (:li :class "time-label"
+	       (:span :class "bg-red"
      (dolist (messages (find-global-messages)) 
-     (htm (:div :class "media alert alert-info"
-	   (:div :class "media-left"
+       (htm
+	(:li (:i :class "fa fa-envelope bg-blue")
+	(:div :class "timeline-item"
+	   (:div :class "timeline-header"
 		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
-	   (:div :class "media-body"
+	   (:div :class "timeline-body"
 		 (:h4 :class "media-heading"
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
 			  (fmt "~A" (escape-string (message-sender messages)))))
@@ -490,13 +502,13 @@
 		 (fmt "~A" (escape-string (message-content messages))))
 	   (if (find-invoice-from-message messages)
 	       (htm
-		(:div :class "media-right"
+		(:div :class "timeline-footer"
 		      (:form :action "/pre-set-cookies"
 			     :method "POST"
 			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
 			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
 			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
-			     (:button :type "submit" :class "btn btn-default" "Write Order"))))))))))
+			     (:button :type "submit" :class "btn btn-default btn-sm btn-flat btn-info" "Write Order"))))))))))))))
 
 (defmacro standard-item-writeup (&key image)
   `(with-html-output (*standard-output* nil :indent t)
@@ -557,7 +569,12 @@
 
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box"
+     (:div :class "box box-default collapsed-box"
+	   (:div :class "box-header with-border"
+		 "List of pictures to be written up"
+		 (:div :class "box-tools pull-right"
+		       (:button :class "btn btn-box-tool" :data-widget "collapse"
+				(:i :class "fa fa-plus"))))
 	   (:div :class "box-body"
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
@@ -694,7 +711,7 @@
 
 (defmacro standard-pdf-iframe (&key pdf)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-default"
+     (:div :class "box box-default collapsed-box"
 	   (:div :class "box-header with-border"
 		 "PDF"
 	   (:div :class "box-tools pull-right"
@@ -908,9 +925,8 @@
 			      :set (fmt "Setname: ~A" (escape-string setname))
 			      :contact (fmt "Contact: ~A" (escape-string contact))
 			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-   									      "-" setname)))))
+    									      "-" setname)))))
     (standard-item-writeup :image (first images-filtered))
-   
     (standard-item-list-table :invoice invoice)
     (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
     (standard-picture-table :image-list (rest images-filtered)))))
@@ -1082,3 +1098,71 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;Alot of the latex code was ported from the racket version and has already been tested alot
 ;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
+
+;;;Fix the pdf shows up as item bug
+;;;Display a no more items message when all pictures have been used
+;;;Add a show list
+;;;Get items to add into a global list for searching when adding a new item
+;;;Make an item page (Display item checkout history)
+;;;Make graphs for how much has been checked in
+;;;Allow an order to be finalized so no new items can be added
+;;;Allow an order to be checked in completely so a summary is displayed instead
+;;;User profiles with timelines
+;;;Better dashboard (Filter by date, type)
+;;;Move invoice list to a hashtable or alist with the showname as a key (Will be much faster)
+;;;Get picture size ratios better on checkin and invoice page
+;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
+;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
+;;;Allow for multiple pictures to reference one item
+;;;Allow for changing which item is being written by clicking on its picture
+;;;Get the image-table code working (well) in the latex class file
+;;;Move html invoice table to a sidebar?
+;;;Display pictures on the invoice table
+;;;Change the setthemcookies name to something reasonable
+;;;Remove the createpdf button and have it generate upon each action
+
+;;;Add a message getting sent to the *global-message-list* when a checkin is done
+;;;^ it should display how many items were checked in and maybe a percentage of what is left
+
+;;;Do not allow an item to be removed if it's checked in
+;;;Setup special privileges for root account and an admin page
+
+;;;Super hard but possibly figure out how to keep pages in sync so more than one person
+;;;^ can be viewing them at the same time
+
+;;;Write order page needs to be something like add show
+;;;^ Should have the ability to select a show that already exists
+;;;^ and create a new invoice for it
+
+;;;Fix invoice numbering and come up with a scheme for it
+;;;Move system over to referencing orders by number
+
+;;;Fix sidebar on mobile view or create a mobile page that is limited
+;;;^ so you can only add pictures or check in items
+
+;;;Work on serializing the structures, perhaps something as simple as cl-conspack
+;;;Create a show info page that displays all the information
+;;;Create a button to download a csv copy of the invoice for importing to quicken
+;;;LOW PRIORITY: Setup https
+
+;;;Dynamically generate the sidebar depending on what show you are on
+;;;^ Should perhaps have a list of links to other sets/invoices in that show
+
+;;;Display the top 10 shows?
+;;;Make the pdf iframe hidable by default
+
+;;;LOW PRIORITY: Clean up the imported javascript libraries so it's using specific versions
+;;;^instead of CVN's
+
+;;;LOW PRIORITY: Messaging system between users
+;;;LOW PRIORITY: Printing
+;;;LOW PRIORITY: Split the code into several files that are grouped accordingly
+;;;LOW PRIORITY: Clean up the hacky workaround for pathnames (removing 70 characters)
+
+;;;Change the latex code to have the correct address, and fix the header
+
+;;;LOW PRIORITY: If a user is logged in the /login page should automatically go to the dashboard
+;;;LOW PRIORITY: Uploaded images should have a reformated version for quicker loading
+;;;Fold the two createpdf functions into one
+
+
