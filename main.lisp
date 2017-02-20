@@ -299,10 +299,10 @@
 		    :href "bootstrap/css/bootstrap.min.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css")
+		    :href "plugins/font-awesome/css/font-awesome.min.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css")
+		    :href "plugins/ionicons/css/ionicons.min.css")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
 		    :href "dist/css/AdminLTE.min.css")
@@ -310,7 +310,7 @@
 		    :rel "stylesheet"
 		    :href "dist/css/skins/_all-skins.min.css")
 	     (:title ,title)
-	    (:script :src "http://code.jquery.com/jquery-latest.min.js")
+	    (:script :src "plugins/jQuery/jquery-3.1.1.min.js")
 	    (:script :src "bootstrap/js/bootstrap.min.js")
 	    (:script :src "dist/js/app.min.js")
 	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
@@ -1158,7 +1158,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
 ;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
 ;;;Allow for multiple pictures to reference one item
-;;;Allow for changing which item is being written by clicking on its picture
+;;;Allow for changing which item is being written by clicking on its picture (FIXED)
 ;;;Get the image-table code working (well) in the latex class file
 ;;;Move html invoice table to a sidebar?
 ;;;Display pictures on the invoice table
@@ -1196,7 +1196,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;Make the pdf iframe hidable by default (FIXED)
 
 ;;;LOW PRIORITY: Clean up the imported javascript libraries so it's using specific versions
-;;;^instead of CVN's
+;;;^instead of CVN's (FIXED)
 
 ;;;LOW PRIORITY: Messaging system between users
 ;;;LOW PRIORITY: Printing
