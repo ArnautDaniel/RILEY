@@ -340,6 +340,17 @@
 			 (:section :class "content"
 	     ,@body))))))
 
+(defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
+  `(with-html-output (*standard-output* nil :indent t)
+   
+		     (:div :class "row"
+			   (:div :class "col-md-3"
+				 
+				 ,@bodythree)
+			 
+			   (:div :class "col-md-9"
+				 ,@bodynine))))
+
 (defmacro standard-login ()
   `(with-html-output (*standard-output* nil :indent t)
       
@@ -512,13 +523,13 @@
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default login-panel"
+    
 	   (:div :class "box"
 		 
 		 (:div :class "box-header"
 		       (:center (:img :src ,image :class "img-responsive"
 				      :width "40%" :height "40%")))
-		 (:div :class  "box-body"
+		 (:div :class  "box-body" 
 		 (:form 
 			:action "/additem"
 			:method "POST"
@@ -561,7 +572,7 @@
 								  :name "image-name" :value img)
 							  (:input :type "image" :id "saveform" :class "img-responsive"
 								  :width "40%" :height "40%" :src img
-								  :alt "Submit Form"))))))))))))))
+								  :alt "Submit Form")))))))))))))
 		      				      
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -937,25 +948,41 @@
 	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
 	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
     
-  (standard-page (:title "Order Writeup")
+ ; (standard-page (:title "Order Writeup")
   
-    (:navbar (test-navbar))
-    (standard-picture-upload)
-    (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
-			      :set (fmt "Setname: ~A" (escape-string setname))
-			      :contact (fmt "Contact: ~A" (escape-string contact))
-			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-    									      "-" setname)))))
-    (standard-item-writeup :image (first images-filtered)
-			   :full-images (rest images-filtered)
-			   :invoice-data invoice)
-    (standard-item-list-table :invoice invoice)
-    (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
-    (standard-picture-table :image-list (rest images-filtered)))))
-
+ ;   (:navbar (test-navbar))
+ ;   (standard-picture-upload)
+ ;   (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
+;			      :set (fmt "Setname: ~A" (escape-string setname))
+;			      :contact (fmt "Contact: ~A" (escape-string contact))
+;			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+    									 ;     "-" setname)))))
+  ;  (standard-item-writeup :image (first images-filtered)
+;			   :full-images (rest images-filtered)
+;			   :invoice-data invoice)
+ ;   (standard-item-list-table :invoice invoice)
+  ;  (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
+					; (standard-picture-table :image-list (rest images-filtered)))))
+    (set-cookie "current-picture" :value  "")
+    (standard-page (:title "Order Writeup")
+      (:navbar (test-navbar))
+      (standard-three-nine-hook
+	    (:bodythree
+		((standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
+				   :set (fmt "Setname: ~A" (escape-string setname))
+				   :contact (fmt "Contact: ~A" (escape-string contact))
+				   :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+													   "-" setname)))))
+		 (standard-picture-upload)))
+	        
+	(standard-item-writeup :image (first images-filtered)
+			       :full-images (rest images-filtered))
+	(standard-item-list-table :invoice invoice)
+	(standard-pdf-iframe :pdf (invoice-pdf-location invoice))
+	(standard-picture-table :image-list (rest images-filtered))))))
 
 (defun sort-item-list (itemlist pic-need)
-  (if (null pic-need)
+  (if (string= pic-need "")
       itemlist
       (cons (first (remove-if-not #'(lambda (x)
 			       (equal x pic-need))
@@ -1154,7 +1181,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;User profiles with timelines
 ;;;Better dashboard (Filter by date, type)
 ;;;Move invoice list to a hashtable or alist with the showname as a key (Will be much faster)
- ;;;Get picture size ratios better on checkin and invoice page
+ ;;;Get picture size ratios better on checkin and invoice page (FIXED)
 ;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
 ;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
 ;;;Allow for multiple pictures to reference one item
