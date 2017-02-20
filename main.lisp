@@ -333,6 +333,7 @@
 });"))
 	    
 	    (:body :class "hold-transition skin-blue fixed"
+	        
 		   (:div :class "wrapper"
 			 ,@navbar)
 		   (:div :class "content-wrapper"
@@ -341,13 +342,12 @@
 
 (defmacro standard-login ()
   `(with-html-output (*standard-output* nil :indent t)
-       
+      
  (:div :class "register-page"
 	  (:div :class "register-box"
 		
 	  (:div :class "register-logo"
 		(:b "RILEY Inventory System"))
-	  
 	  (:div :class "register-box-body"
 	  (:p :class "login-box-msg" "Register a new account")
 	  (:form :action "/adduser"
@@ -510,13 +510,14 @@
 			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
 			     (:button :type "submit" :class "btn btn-default btn-sm btn-flat btn-info" "Write Order"))))))))))))))
 
-(defmacro standard-item-writeup (&key image)
+(defmacro standard-item-writeup (&key image full-images invoice-data)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default login-panel"
 	   (:div :class "box"
 		 
 		 (:div :class "box-header"
-		      (:center (:img :src ,image :class "img-responsive")))
+		       (:center (:img :src ,image :class "img-responsive"
+				      :width "40%" :height "40%")))
 		 (:div :class  "box-body"
 		 (:form 
 			:action "/additem"
@@ -542,10 +543,26 @@
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
-			(:button :type "submit" :class "btn btn-info btn-default btn-flat btn-block" "Add item")))))))
-     
-			      
-				      
+			(:button :type "submit" :class "btn btn-info btn-default btn-flat btn-block" "Add item")
+			(:button :type "button" :class "btn btn-warning btn-default btn-flat btn-block"
+				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures"))
+		 (:div :id "myModal" :class "modal fade" :role "dialog"
+		       (:div :class "modal-dialog"
+			     (:div :class "modal-content"
+				   (:div :class "modal-header"
+					 (:button :type "button" :class "close" :data-dismiss "modal" "Close")
+					 (:h4 :class "modal-title" "Switch or Add multiple pictures")
+					 (:div :class "modal-body"
+					        (dolist (img ,full-images)
+						  (htm 
+						   (:form :action "/swapitemposition"
+							  :method "POST"
+							  (:input :type "hidden" :id "image-name"
+								  :name "image-name" :value img)
+							  (:input :type "image" :id "saveform" :class "img-responsive"
+								  :width "40%" :height "40%" :src img
+								  :alt "Submit Form"))))))))))))))
+		      				      
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "panel panel-default"
@@ -578,7 +595,8 @@
 	   (:div :class "box-body"
 		    (dolist (image ,image-list)
 		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
-				 (:img :src image :class "img-responsive"))))))))
+				 (:img :src image :class "img-responsive"
+				       :width "40%" :height "40%"))))))))
 
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -668,7 +686,8 @@
 				       :id "fancybox"
 				       :rel "gallery1"
 				       :href (item-picture item)
-				       (:img :src (item-picture item) :class "img-responsive")))
+				       (:img :src (item-picture item) :class "img-responsive"
+					     :width "40%" :height "40%")))
 					       
 			      (:td (fmt "~A" (escape-string (item-description item))))
 			      (:td (fmt "~A" (escape-string (item-quantity item))))
@@ -914,8 +933,9 @@
 	 (showname (show-name invoice))
 	 (setname (invoice-set-name invoice))
 	 (contact (invoice-contact-name invoice))
+	 (change-pic-cookie (cookie-in "current-picture"))
 	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
-	 (images-filtered (filter-already-in-itemlist images invoice)))
+	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
     
   (standard-page (:title "Order Writeup")
   
@@ -926,18 +946,33 @@
 			      :contact (fmt "Contact: ~A" (escape-string contact))
 			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
     									      "-" setname)))))
-    (standard-item-writeup :image (first images-filtered))
+    (standard-item-writeup :image (first images-filtered)
+			   :full-images (rest images-filtered)
+			   :invoice-data invoice)
     (standard-item-list-table :invoice invoice)
     (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
     (standard-picture-table :image-list (rest images-filtered)))))
 
+
+(defun sort-item-list (itemlist pic-need)
+  (if (null pic-need)
+      itemlist
+      (cons (first (remove-if-not #'(lambda (x)
+			       (equal x pic-need))
+			   itemlist))
+	    (remove-if #'(lambda (x)
+			   (equal x pic-need))
+		       itemlist))))
+
 ;;;Remove the absolute pathname and limit it to the show-bank directory
 ;;;Probably needs to be reworked entirely
 (defun prepare-for-table (fad-list)
-  (mapcar #'(lambda (x)
-	    (let ((string-path-image (namestring x)))
-	      (subseq (namestring string-path-image) 70)))
-	  fad-list))
+        (mapcar #'(lambda (x)
+	      (let ((string-path-image (namestring x)))
+		    (subseq (namestring string-path-image) 70)))
+		(remove-if #'(lambda (x)
+			       (cl-fad:directory-exists-p x))
+			   fad-list)))
 
 ;;;Expects an invoice with the string showname-setname
 (defun count-pics-from-invoice (inv)
@@ -945,9 +980,18 @@
 	"0"
 	(let* ((invoice (find-invoice-from-cookie inv))
 	       (invoice-pathname (invoice-root-dir invoice)))
-	  (concatenate 'string "There are " (write-to-string (length (cl-fad:list-directory invoice-pathname)))
+	  (concatenate 'string "There are " (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
 		       " pictures on this order"))))
-  
+
+(defun filtered-length (directory-list)
+  (length (remove-if #'(lambda (x)
+			 (cl-fad:directory-exists-p x))
+		     directory-list)))
+
+(define-easy-handler (swapitemposition :uri "/swapitemposition") ()
+  (set-cookie "current-picture" :value (hunchentoot:post-parameter "image-name"))
+  (redirect "/setthemcookies"))
+
 (define-easy-handler (signout :uri "/signout") ()
   (set-cookie "current-user" :value "login")
   (redirect "/login"))
@@ -1099,7 +1143,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
 
-;;;Fix the pdf shows up as item bug
+;;;Fix the pdf shows up as item bug  (FIXED)
 ;;;Display a no more items message when all pictures have been used
 ;;;Add a show list
 ;;;Get items to add into a global list for searching when adding a new item
@@ -1110,7 +1154,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;User profiles with timelines
 ;;;Better dashboard (Filter by date, type)
 ;;;Move invoice list to a hashtable or alist with the showname as a key (Will be much faster)
-;;;Get picture size ratios better on checkin and invoice page
+ ;;;Get picture size ratios better on checkin and invoice page
 ;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
 ;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
 ;;;Allow for multiple pictures to reference one item
@@ -1149,7 +1193,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;^ Should perhaps have a list of links to other sets/invoices in that show
 
 ;;;Display the top 10 shows?
-;;;Make the pdf iframe hidable by default
+;;;Make the pdf iframe hidable by default (FIXED)
 
 ;;;LOW PRIORITY: Clean up the imported javascript libraries so it's using specific versions
 ;;;^instead of CVN's
