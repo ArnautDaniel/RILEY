@@ -1,4 +1,4 @@
-;;;Fix the pdf shows up as item bug
+;;;Fix the pdf shows up as item bug                                                                  (FIXED)
 ;;;Display a no more items message when all pictures have been used
 ;;;Add a show list
 ;;;Get items to add into a global list for searching when adding a new item
@@ -9,7 +9,7 @@
 ;;;User profiles with timelines
 ;;;Better dashboard (Filter by date, type)
 ;;;Move invoice list to a hashtable or alist with the showname as a key (Will be much faster)
-;;;Get picture size ratios better on checkin and invoice page
+;;;Get picture size ratios better on checkin and invoice page                                        (FIXED)
 ;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
 ;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
 ;;;Allow for multiple pictures to reference one item
@@ -63,3 +63,5 @@
 ;;;If a user is logged in the /login page should automatically go to the dashboard
 ;;;LOW PRIORITY: Uploaded images should have a reformated version for quicker loading
 ;;;Fold the two createpdf functions into one
+
+Bring www/ into the main directory (FIXED)
