@@ -527,8 +527,8 @@
 	   (:div :class "box"
 		 
 		 (:div :class "box-header"
-		       (:center (:img :src ,image :class "img-responsive"
-				      :width "40%" :height "40%")))
+		       (:center (:img :id "input-picture" :src ,image :class "img-responsive"
+				      :width "40%" :height "40%" :name ,image)))
 		 (:div :class  "box-body" 
 		 (:form 
 			:action "/additem"
@@ -999,7 +999,7 @@
 (defun prepare-for-table (fad-list)
         (mapcar #'(lambda (x)
 	      (let ((string-path-image (namestring x)))
-		    (subseq (namestring string-path-image) 70)))
+		    (subseq (namestring string-path-image) 54)))
 		(remove-if #'(lambda (x)
 			       (cl-fad:directory-exists-p x))
 			   fad-list)))
