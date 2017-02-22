@@ -526,7 +526,7 @@
     
 	   (:div :class "box"
 		 
-		 (:div :class "box-header"
+		 (:div :class "box-header" :id "box-picture"
 		       (:center (:img :id "input-picture" :src ,image :class "img-responsive"
 				      :width "40%" :height "40%" :name ,image)))
 		 (:div :class  "box-body" 
@@ -566,7 +566,7 @@
 				   (:div :class "modal-header"
 					 (:button :type "button" :class "close" :data-dismiss "modal" "Close")
 					 (:h4 :class "modal-title" "Switch or Add multiple pictures")
-					 (:div :class "modal-body"
+					 (:div :class "modal-body" :id "modalImg"
 					        (dolist (img ,full-images)
 						  (htm 
 						   (:form :action "/swapitemposition"
