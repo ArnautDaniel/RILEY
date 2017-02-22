@@ -32,3 +32,5 @@ jQuery("#input-picture").detach()
 error: function() {
 alert('error');
 } } ); }); });
+
+$("#myparentID > img").first();
