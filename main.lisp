@@ -533,7 +533,7 @@
 		 (:form 
 			:action "/additem"
 			:method "POST"
-			:id "New-item"
+			:id "new-item"
 			(:div :class "form-group has-feedback "
 			      (:label :for "inputDesc" "Description")
 			      (:span :class "form-control-feedback")
@@ -557,6 +557,9 @@
 			(:button :type "submit" :class "btn btn-info btn-default btn-flat btn-block" "Add item")
 			(:button :type "button" :class "btn btn-warning btn-default btn-flat btn-block"
 				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures"))
+		 (:div :id "form-messages")
+		 (:script :src "plugins/custom/ajax-item.js")
+
 		 (:div :id "myModal" :class "modal fade" :role "dialog"
 		       (:div :class "modal-dialog"
 			     (:div :class "modal-content"
