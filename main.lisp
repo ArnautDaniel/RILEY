@@ -314,7 +314,7 @@
 	    (:script :src "bootstrap/js/bootstrap.min.js")
 	    (:script :src "dist/js/app.min.js")
 	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
-	    (:script :src "plugins/fastclick/fastclick.js")
+	    (:script :src "plugins/fastclick/fastclick.min.js")
 	    (:script :src "plugins/datatables/jquery.dataTables.min.js")
 	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js")
 	    (:link :rel "stylesheet" :type "text/css"
@@ -477,6 +477,7 @@
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)
+     (:script :type "text/javascript"	     
      (:div :class "panel panel-default"
 	   (:div :class "panel-heading user-brief"
 		 (:h1 "Dashboard")
@@ -1185,13 +1186,13 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;Better dashboard (Filter by date, type)
 ;;;Move invoice list to a hashtable or alist with the showname as a key (Will be much faster)
  ;;;Get picture size ratios better on checkin and invoice page (FIXED)
-;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript)
+;;;Try to figure out adding an item to the invoice without refreshing (JS/Parenscript) (Almost Done)
 ;;;Change current-user cookie to use a hash so you can't change users by screwing with the cookies
-;;;Allow for multiple pictures to reference one item
+;;;Allow for multiple pictures to reference one item (Almost done)
 ;;;Allow for changing which item is being written by clicking on its picture (FIXED)
 ;;;Get the image-table code working (well) in the latex class file
-;;;Move html invoice table to a sidebar?
-;;;Display pictures on the invoice table
+;;;Move html invoice table to a sidebar? (No)
+;;;Display pictures on the invoice table (No)
 ;;;Change the setthemcookies name to something reasonable
 ;;;Remove the createpdf button and have it generate upon each action
 
