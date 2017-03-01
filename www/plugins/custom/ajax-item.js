@@ -24,13 +24,12 @@ var cell4 = row.insertCell(3);
 cell1.innerHTML = desc;
 cell2.innerHTML = price;
 cell3.innerHTML = qty;
-var newimg = $("#saveform");
-jQuery("#saveform").detach().appendTo("#box-picture");
-jQuery("#input-picture").detach()
+var newimg = $("#image-name");
+$("#input-picture").removeAttr("src").attr("src", newimg.src);
+
 
 },
 error: function() {
 alert('error');
 } } ); }); });
 
-$("#myparentID > img").first();

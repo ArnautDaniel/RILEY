@@ -47,6 +47,9 @@
 	      :accessor invoice-item-list)
    (root-dir :initarg :root-dir
 	     :accessor invoice-root-dir)
+   (finalized :initarg :finalized
+	      :accessor invoice-finalized
+	      :initform '())
    (pdf-location :initarg :pdf-location
 		 :accessor invoice-pdf-location)))
 
@@ -476,8 +479,7 @@
 				     (:span "Sign Out"))))))))
 
 (defmacro standard-dashboard (&key messages)
-  `(with-html-output (*standard-output* nil :indent t)
-     (:script :type "text/javascript"	     
+  `(with-html-output (*standard-output* nil :indent t)	     
      (:div :class "panel panel-default"
 	   (:div :class "panel-heading user-brief"
 		 (:h1 "Dashboard")
@@ -768,7 +770,8 @@
 		 (:a :href "/createpdf" (:button :type "submit" :class "btn btn-default btn-sm btn-info"
 						 "Create PDF"))
 		 (:a :href "/check-in-set" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Check-in Items"))
-		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Invoice homepage"))))))
+		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Invoice homepage"))
+		 (:a :href "/finalizeinvoice" (:button :type "submit" :class "btn btn-default btn-sm btn-warning" "Finalize Invoice"))))))
 
 ;;;Define page handler functions
 
@@ -894,13 +897,13 @@
 	 (item (hunchentoot:post-parameter "item"))
 	 (item-price (hunchentoot:post-parameter "item-price"))
 	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
-        (setf (invoice-item-list invoice) (remove-if #'(lambda (x)
+    (if (not (invoice-finalized invoice))
+	(setf (invoice-item-list invoice) (remove-if #'(lambda (x)
 							 (and (string= (item-description x) item)
 							      (string= (item-price x) item-price)
-							      (string= (item-quantity x) item-quantity)))
-						        
+							      (string= (item-quantity x) item-quantity)))	        
 						     (invoice-item-list invoice))))
-  (redirect "/setthemcookies"))
+  (redirect "/setthemcookies")))
 
 ;;;Standard check in page that displays a table of shows with invoices
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
@@ -951,22 +954,6 @@
 	 (change-pic-cookie (cookie-in "current-picture"))
 	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
 	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
-    
- ; (standard-page (:title "Order Writeup")
-  
- ;   (:navbar (test-navbar))
- ;   (standard-picture-upload)
- ;   (standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
-;			      :set (fmt "Setname: ~A" (escape-string setname))
-;			      :contact (fmt "Contact: ~A" (escape-string contact))
-;			      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-    									 ;     "-" setname)))))
-  ;  (standard-item-writeup :image (first images-filtered)
-;			   :full-images (rest images-filtered)
-;			   :invoice-data invoice)
- ;   (standard-item-list-table :invoice invoice)
-  ;  (standard-pdf-iframe :pdf (invoice-pdf-location invoice))
-					; (standard-picture-table :image-list (rest images-filtered)))))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
       (:navbar (test-navbar))
