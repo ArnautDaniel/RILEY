@@ -29,6 +29,8 @@ if ($("#image-name").attr("value") == null) {
 $("#input-picture").replaceWith("<p> All out of pictures </p>"); }
 else {
 $("#input-picture").replaceWith("<img id='input-picture' src='" + $("#image-name").attr("value") + "' class='img-responsive' width='40%' height='40%' name='" + $("#image-name").attr("value") + "' />");
+$("#input-picture").fadeOut(0);
+$("#input-picture").fadeIn("slow");
 $('#modalImg').find('form').first().remove();}
 },
 error: function() {
