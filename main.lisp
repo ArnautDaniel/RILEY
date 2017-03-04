@@ -527,7 +527,7 @@
 (defmacro standard-item-writeup (&key image full-images invoice-data)
   `(with-html-output (*standard-output* nil :indent t)
     
-	   (:div :class "box"
+	   (:div :class "box" :id "write-up-box"
 		 
 		 (:div :class "box-header" :id "box-picture"
 		       (:center (:img :id "input-picture" :src ,image :class "img-responsive"
