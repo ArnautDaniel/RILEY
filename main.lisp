@@ -460,7 +460,8 @@
 		       (:div :class "user-panel"
 			     (:div :class "pull-left image"
 				   (:img :class "img-circle" :src "img/littlec.jpg"))
-			     (:div :class "pull-left info" (:p "CAPS USER")
+			     (:div :class "pull-left info" (fmt "~a" (escape-string (cookie-in "current-user")))
+				   (:br)
 			     (:a :href "#" (:i :class "fa fa-circle text-success") "Online")))
 		       
 		       (:ul :class "sidebar-menu"
@@ -529,7 +530,7 @@
     
 	   (:div :class "box" :id "write-up-box"
 		 
-		 (:div :class "box-header" :id "box-picture"
+		 (:div :class "box-header" :id "box-picture" 
 		       (:center (:img :id "input-picture" :src ,image :class "img-responsive"
 				      :width "40%" :height "40%" :name ,image)))
 		 (:div :class  "box-body" 
@@ -677,7 +678,9 @@
 				     :name "item-quantity" :id "item-quantity")
 			     (:input :type "hidden" :value ,invoice
 				     :name "invoice" :id "invoice")
-			     (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))))))))
+			     (if (string= (item-returned-on item) "")
+				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
+				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true" "Already Checked In")))))))))) ;;;Force remove option may be necessary due to this
 	  (:script "$(\"#itemlist\").DataTable();")))))
 	  
      
@@ -729,7 +732,7 @@
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "box box-success"
 	   (:div :class "box-header"
-		 (:h3 "Upload pictures to this order:"))
+		 (:h3 "Upload to this order"))
 	   (:div :class "box-body"
 		 (:form :action "/displayimagegot"
 			:class "form-inline"
@@ -760,7 +763,7 @@
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-info"
+     (:div :class "box box-info" :id "invoice-writing-box"
 	   (:div :class "box-body"
 		 (:ul :class "list-group"
 		      (:li :class "list-group-item list-group-item-success" ,show)
