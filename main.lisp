@@ -270,6 +270,8 @@
 
 ;;;Helper function for moving uploaded pictures to the correct directory
 ;;;Needs to delete the pictures after and be expanded.
+;;;This version (past revision 66) now has side effects
+;;;deletes the temporary image!
 (defun move-image-to-invoice-dir (img-data)
   (let* ((current-invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (invoice-location (invoice-root-dir current-invoice))
@@ -278,7 +280,9 @@
     (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				     :name image-name)
 		      (make-pathname :directory invoice-location
-				     :name image-name))))
+				     :name image-name) :overwrite t)
+    (delete-file (make-pathname :directory temp-image-directory
+				:name image-name))))
 
 ;;; Webserver functions and scaffolding
 ;;;Set HTML5 preamble
@@ -680,7 +684,9 @@
 				     :name "invoice" :id "invoice")
 			     (if (string= (item-returned-on item) "")
 				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
-				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true" "Already Checked In")))))))))) ;;;Force remove option may be necessary due to this
+				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
+					       (fmt "Check in on ~A" (escape-string (item-returned-on item)))))))))))))
+;;;Force remove option may be necessary due to this
 	  (:script "$(\"#itemlist\").DataTable();")))))
 	  
      
@@ -844,8 +850,12 @@
 							      (string= (item-price x) item-price)
 							      (string= (item-quantity x) item-qty))) (invoice-item-list invoice)))))
 
-    (setf  (item-returned-on item)
-	   "1/17")
+    
+	   (multiple-value-bind
+		 (second minute hour date month year)
+	       (get-decoded-time)
+	     (setf (item-returned-on item)
+		   (format nil "~d/~d" month date)))
     (createpdf2)
   (redirect "/check-in-set")))
 
@@ -863,7 +873,7 @@
 			(fourth x))
 		(rename-file (second x)
 			     (concatenate 'string "/tmp/"
-					  (third x)))
+					  (third x)) :if-exists :supersede)
 		(move-image-to-invoice-dir x))
 		     
 	    whatever)))
