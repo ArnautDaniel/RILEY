@@ -199,13 +199,6 @@
 
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
-(defun find-invoice-from-message (mess)
-  (let ((setname (first (message-invoice-name mess)))
-	(showname (second (message-invoice-name mess))))
-    (first (remove-if-not (lambda (x)
-		     (and (string= setname (invoice-set-name x))
-			  (string= showname (show-name x))))
-			  *global-invoice-list*))))
 
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
@@ -307,6 +300,7 @@
 	     (:script :src "js/jquery.js")
 	     (:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
+	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
 	    
 	    (:script "$(document).ready(function() {
 	$(\".fancybox\").fancybox({
@@ -315,13 +309,11 @@
 	});
 });"))
 	    
-	    (:body :class "hold-transition skin-blue fixed"
-	        
-		   (:div :class "wrapper"
-			 ,@navbar)
-		   (:div :class "content-wrapper"
-			 (:section :class "content"
-	     ,@body))))))
+	    (:body :class ""
+	        ,@navbar		   	       
+		(:div :class "container"
+		      (:div :class "section"
+		       ,@body))))))
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
   `(with-html-output (*standard-output* nil :indent t)
@@ -433,7 +425,7 @@
 			    (:li (:a :href "/signout" "Sign out"))
 			    (:li (:a :href "/checkinlist" "Check In"))))))))
 
-(defmacro test-navbar ()
+(defmacro test-navbar-old ()
   `(with-html-output (*standard-output* nil :indent t)
      (:aside :class "main-sidebar"
 	     (:section :class "sidebar"
@@ -459,51 +451,61 @@
 				 (:a :href "/signout" (:i :class "fa fa-sign-out")
 				     (:span "Sign Out"))))))))
 
+(defmacro test-navbar ()
+  `(with-html-output (*standard-output* nil :indent t)
+     (:nav :class "red" :role "navigation"
+	   (:div :id "nav-wrapper"
+		 (:a :href "#!" :class "brand-logo" "CAPS")
+		 (:a :href "#" :data-activates "mobile-demo" :class "button-collapse"
+		     (:i :class "material-icons" "menu"))
+		 (:ul :class "side-nav" :id "mobile-demo"
+		      (:li (:a :href "/dashboard" "Dashboard"))
+		      (:li (:a :href "/write-order" "Write Order"))
+		      (:li (:a :href "/checkinlist" "Show List"))
+		      (:li (:a :href "/signout" "Sign Out")))
+		 (:script "$('.button-collapse').sideNav();")))))
+
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)	     
-     (:div :class "panel panel-default"
-	   (:div :class "panel-heading user-brief"
-		 (:h1 "Dashboard")
+     (:div :class "row"
+	   (:div :class "col s12 m12"
+		 (:h1 :class "center" "Dashboard")
+		 (:div :class "row"
 		 (:form :role "form"
 			:action "/addmessage"
-			:method "post"
-			:class "form-inline"
-			(:div :class "form-group"
-			      (:label :class "sr-only" :for "tweet" "Say Something")
-			      (:input :type "text" :class "form-control"
-				      :id "message" :name "message"
-				      :placeholder "Post a message")
-			      (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))
-	   
-		 ,messages))
-
+			:method "post"		      
+			(:div :class "input-field col s12"
+			      (:label :for "say-something" "Post a message!")
+			      (:input :type "text" :class "validate"
+				      :id "message" :name "message")
+			      (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))	   
+		 ,messages)))
+(defun pair-off (lst)
+  (cond
+    ((null lst) '())
+    ((> (length lst) 1) (list (list (car lst) (cadr lst)) (pair-off (cddr lst))))
+    ((<= (length lst) 1) (list (car lst) '()))))
+    
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
-   
-     (:ul :class "timeline"
-	  (:li :class "time-label"
-	       (:span :class "bg-red"
-     (dolist (messages (find-global-messages)) 
+     (:div :class "row"
+	   (:div :class "col s12 m6"
+     (dolist (messages (find-global-messages))
        (htm
-	(:li (:i :class "fa fa-envelope bg-blue")
-	(:div :class "timeline-item"
-	   (:div :class "timeline-header"
-		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
-	   (:div :class "timeline-body"
-		 (:h4 :class "media-heading"
+	(:div :class "card"
+	   (:div :class "card-content"
+		 (:span :class "card-title" (:h4 
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
-			  (fmt "~A" (escape-string (message-sender messages)))))
+			  (fmt "~A" (escape-string (message-sender messages))))))
 		 
-		 (fmt "~A" (escape-string (message-content messages))))
-	   (if (find-invoice-from-message messages)
+		 (fmt "~A" (escape-string (message-content  messages))))
+	   (if (message-invoice-name messages)
 	       (htm
-		(:div :class "timeline-footer"
-		      (:form :action "/pre-set-cookies"
-			     :method "POST"
-			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
-			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
-			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
-			     (:button :type "submit" :class "btn btn-default btn-sm btn-flat btn-info" "Write Order"))))))))))))))
+		(:div :class "card-action"
+		      (:a :href "#" "Order Page")
+		      (:a :href "#" "Show Page")
+		      (:a :href "#" "Check In Page")))))))))))
+
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
   `(with-html-output (*standard-output* nil :indent t)
@@ -784,7 +786,16 @@
 		    :content (concatenate 'string "An order has been started for " showname
 					   " for set " setname
 					   " ordered by " contact )
-		    :invoice-name (list setname showname contact *global-invoice-id*)))
+		    :invoice-name `(let ((shn showname)
+					(stn setname)
+					(cont contact))
+				    (lambda ()
+					       (find-invoice-from-invoice
+						(make-instance 'invoice
+							       :set-name shn
+							       :show-name stn
+							       :contact-name cont))))))
+				    
   (redirect "/dashboard"))
 
 ;;;Basic function to create a new show		      
