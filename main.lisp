@@ -303,35 +303,11 @@
 	     (:meta :name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "bootstrap/css/bootstrap.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/font-awesome/css/font-awesome.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/ionicons/css/ionicons.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "dist/css/AdminLTE.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "dist/css/skins/_all-skins.min.css")
-	     (:title ,title)
-	    (:script :src "plugins/jQuery/jquery-3.1.1.min.js")
-	    (:script :src "bootstrap/js/bootstrap.min.js")
-	    (:script :src "dist/js/app.min.js")
-	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
-	    (:script :src "plugins/fastclick/fastclick.min.js")
-	    (:script :src "plugins/datatables/jquery.dataTables.min.js")
-	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js")
-	    (:link :rel "stylesheet" :type "text/css"
-		   :href "plugins/custom/fancybox/source/jquery.fancybox.css")
-	    (:script :src "plugins/custom/fancybox/source/jquery.fancybox.pack.js")
-	    (:script :src "plugins/custom/fancybox/lib/jquery.mousewheel.pack.js")
-	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-media.js")
-	    (:link :rel "stylesheet" :type "text/css"
-		   :href "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.css")
-	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.js")
+		    :href "css/materialize.min.css")
+	     (:script :src "js/jquery.js")
+	     (:script :src "js/ajax-item.js")
+	     (:script :src "js/materialize.min.js")
+	    
 	    (:script "$(document).ready(function() {
 	$(\".fancybox\").fancybox({
 		openEffect	: 'none',
