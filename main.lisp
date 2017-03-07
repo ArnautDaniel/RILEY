@@ -48,10 +48,6 @@
    (root-dir :initarg :root-dir
 	     :accessor invoice-root-dir)
    (finalized :initarg :finalized
-	      :accessor invoice-finalized
-	      :initform '())
-   (pdf-location :initarg :pdf-location
-		 :accessor invoice-pdf-location)))
 
 (defclass check-in ()
   ((date :initarg :date
