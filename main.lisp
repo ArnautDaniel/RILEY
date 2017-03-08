@@ -729,14 +729,14 @@
 		    :content (concatenate 'string "An order has been started for " showname
 					   " for set " setname
 					   " ordered by " contact )
-		    :invoice-name `(let ((shn showname)
+		    :invoice-name (let ((shn showname)
 					(stn setname)
 					(cont contact))
 				    (lambda ()
 					       (find-invoice-from-invoice
 						(make-instance 'invoice
-							       :set-name shn
-							       :show-name stn
+							       :set-name stn
+							       :show-name shn
 							       :contact-name cont))))))
 				    
   (redirect "/dashboard"))
