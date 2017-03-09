@@ -298,9 +298,17 @@
 		    :rel "stylesheet"
 		    :href "css/materialize.min.css")
 	     (:script :src "js/jquery.js")
-	     (:script :src "js/ajax-item.js")
+	     ;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
-	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet"))
+	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "plugins/dataTables/datatables.min.css")
+	     (:script :src "plugins/dataTables/datatables.min.js")
+	     (:script :src "plugins/dataTables/Responsive-2.1.1/js/dataTables.responsive.min.js")
+	     (:link :type "text/css"
+		    :rel "stylesheet"
+		    :href "plugins/dataTables/Responsive-2.1.1/css/responsive.dataTables.min.css"))
 	    
 	   	    
 	    (:body 
@@ -448,9 +456,9 @@
 	   (if (message-invoice-name messages)
 	       (htm
 		(:div :class "card-action"
-		      (:a :href "#" "Order Page")
-		      (:a :href "#" "Show Page")
-		      (:a :href "#" "Check In Page")))))))))))
+		      (:a :href "#" "Order")
+		      (:a :href "#" "Show")
+		      (:a :href "#" "Check In")))))))))))
 
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
@@ -471,13 +479,13 @@
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-description"
 				      :name "input-item-description"))
-			(:div :class "input-field s12"
+			(:div :class "input-field s6"
 			    
 			      (:label :for "inputPrice" "Price")
 			      (:input :type "text" :class "form-control"
 				      :id "input-item-price"
 				      :name "input-item-price"))
-			(:div :class "input-field s12"
+			(:div :class "input-field s6"
 			     
 			      (:label :for "inputQty" "Quantity")
 			      (:input :type "text" :class "form-control"
@@ -489,7 +497,7 @@
 			(:button :type "button" :class "btn waves-effect waves-light"
 				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures")))
 		 (:div :id "form-messages")
-		 (:script :src "plugins/custom/ajax-item.js")
+		 ;(:script :src "plugins/custom/ajax-item.js")
 
 		 (:div :id "myModal" :class "modal fade" :role "dialog"
 		       (:div :class "modal-dialog"
@@ -521,11 +529,11 @@
 		  (:label :class "white-text" :for "inputShow" "Show")
 		  (:input :type "text" :class "form-control" :id "inputShowname"
 			  :name "inputShowname"))
-	    (:div :class "input-field col s12"
+	    (:div :class "input-field col s6 m6 l6"
 		  (:label :class "white-text" :for "inputSet" "Set")
 		  (:input :type "text" :class "white-text" :id "inputSetname"
 			  :name "inputSetname"))
-	    (:div :class "input-field col s12"
+	    (:div :class "input-field col s6 m6 l6"
 		  (:label :class "white-text" :for "inputContact" "Contact Name")
 		  (:input :type "text" :class "form-control" :id "inputContact"
 			  :name "inputContact"))
@@ -576,27 +584,23 @@
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card"
-	   (:div :class "card-content")
-		 
-     
-	  (:table :id "itemlist" :class "table table-bordered table-striped"
-		 (:thead
-		 
-		  (:tr
-		   (:th "Description")
-		   (:th "Price")
-		   (:th "Quantity")
-		   (:th "Remove?")))
-		 (:tbody
+     (:div :class "row"
+	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :placeholder "Search for items")
+	   (:script :src "plugins/search.js")
+	   (:ul :id "myUL"
 		  (dolist (item (invoice-item-list ,invoice))
 		    (htm
-		     (:tr
-		      
-		      (:td (fmt "~A" (escape-string (item-description item))))
-		      (:td (fmt "~A" (escape-string (item-price item))))
-		      (:td (fmt "~A" (escape-string (item-quantity item))))
-		      (:td (:form :class "form-inline"
+		     (:li
+		     (:div :class "col s12 m6 l6"
+			   (:div :class "card"
+				 (:div :class "card-image"
+				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed")
+				       (:span :class "black card-title" (fmt "~A" (escape-string (item-description item)))))
+				 (:div :class "card-content"
+		      (:div :class "chip" (fmt "Price: ~A" (escape-string (item-price item))))
+		      (:div :class "chip" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
+				 (:div :class "card-action"
+		      (:form :class "form-inline"
 			     :action "/removeitem"
 			     :method "POST"
 			     :id "item-table"
@@ -611,9 +615,9 @@
 			     (if (string= (item-returned-on item) "")
 				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
 				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
-					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))
+					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))))))
 ;;;Force remove option may be necessary due to this
-	  (:script "$(\"#itemlist\").DataTable();"))))
+
 	  
      
 
@@ -661,7 +665,7 @@
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "card"
 	   (:div :class "card-content"
-		(:span :class "card-title" (:h3 "Upload"))
+		(:span :class "card-title" (:h5 "Upload"))
 	   
 		 (:form :action "/displayimagegot"
 			:class "form-inline"
@@ -795,7 +799,6 @@
 		     if (equal (car post-parameter) "picture-batch")
 				    collect post-parameter)))
     (standard-page (:title "Picture Batch")
-      (standard-navbar)
       (mapc #'(lambda (x)
 		(format t "~A ~A ~A ~A <br>"  (first x)
 			(second x)
