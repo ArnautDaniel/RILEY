@@ -5,7 +5,8 @@
 	:cl-pass
 	:hunchentoot
 	:parenscript
-	:trivial-shell))
+	:trivial-shell
+	:opticl))
 
 (defvar *current-message-list* '())
 (defvar *global-invoice-list* '())
@@ -274,6 +275,24 @@
 				     :name image-name)
 		      (make-pathname :directory invoice-location
 				     :name image-name) :overwrite t)
+    (ensure-directories-exist (concatenate 'string invoice-location "webimg/"))
+    (let* ((new-img-name (concatenate 'string (invoice-set-name current-invoice)
+							"-"
+							(show-name current-invoice)
+							"-"
+						        (write-to-string (invoice-id-num current-invoice))
+							".jpg")))
+
+      
+    (cl-fad:copy-file (make-pathname :directory temp-image-directory
+				     :name image-name)
+		      (make-pathname :directory (concatenate 'string invoice-location "webimg/")
+				     :name new-img-name) :overwrite t)
+    (let* ((new-img-path (make-pathname :directory (concatenate 'string invoice-location "webimg/")
+					:name new-img-name))
+	   (img (read-jpeg-file new-img-path)))
+    (write-jpeg-file new-img-path (resize-image img 1200 1600))))
+    (setf (invoice-id-num current-invoice) (+ (invoice-id-num current-invoice) 1))
     (delete-file (make-pathname :directory temp-image-directory
 				:name image-name))))
 
@@ -800,10 +819,6 @@
 				    collect post-parameter)))
     (standard-page (:title "Picture Batch")
       (mapc #'(lambda (x)
-		(format t "~A ~A ~A ~A <br>"  (first x)
-			(second x)
-			(third x)
-			(fourth x))
 		(rename-file (second x)
 			     (concatenate 'string "/tmp/"
 					  (third x)) :if-exists :supersede)
@@ -898,7 +913,7 @@
 	 (setname (invoice-set-name invoice))
 	 (contact (invoice-contact-name invoice))
 	 (change-pic-cookie (cookie-in "current-picture"))
-	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
+	 (images (prepare-for-table (cl-fad:list-directory (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
 	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
