@@ -199,13 +199,6 @@
 
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
-(defun find-invoice-from-message (mess)
-  (let ((setname (first (message-invoice-name mess)))
-	(showname (second (message-invoice-name mess))))
-    (first (remove-if-not (lambda (x)
-		     (and (string= setname (invoice-set-name x))
-			  (string= showname (show-name x))))
-			  *global-invoice-list*))))
 
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
@@ -303,270 +296,208 @@
 	     (:meta :name "viewport" :content "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "bootstrap/css/bootstrap.min.css")
+		    :href "css/materialize.min.css")
+	     (:script :src "js/jquery.js")
+	     ;(:script :src "js/ajax-item.js")
+	     (:script :src "js/materialize.min.js")
+	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "plugins/font-awesome/css/font-awesome.min.css")
+		    :href "plugins/dataTables/datatables.min.css")
+	     (:script :src "plugins/dataTables/datatables.min.js")
+	     (:script :src "plugins/dataTables/Responsive-2.1.1/js/dataTables.responsive.min.js")
 	     (:link :type "text/css"
 		    :rel "stylesheet"
-		    :href "plugins/ionicons/css/ionicons.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "dist/css/AdminLTE.min.css")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "dist/css/skins/_all-skins.min.css")
-	     (:title ,title)
-	    (:script :src "plugins/jQuery/jquery-3.1.1.min.js")
-	    (:script :src "bootstrap/js/bootstrap.min.js")
-	    (:script :src "dist/js/app.min.js")
-	    (:script :src "plugins/slimScroll/jquery.slimscroll.min.js")
-	    (:script :src "plugins/fastclick/fastclick.min.js")
-	    (:script :src "plugins/datatables/jquery.dataTables.min.js")
-	    (:script :src "plugins/datatables/dataTables.bootstrap.min.js")
-	    (:link :rel "stylesheet" :type "text/css"
-		   :href "plugins/custom/fancybox/source/jquery.fancybox.css")
-	    (:script :src "plugins/custom/fancybox/source/jquery.fancybox.pack.js")
-	    (:script :src "plugins/custom/fancybox/lib/jquery.mousewheel.pack.js")
-	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-media.js")
-	    (:link :rel "stylesheet" :type "text/css"
-		   :href "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.css")
-	    (:script :src "plugins/custom/fancybox/source/helpers/jquery.fancybox-thumbs.js")
-	    (:script "$(document).ready(function() {
-	$(\".fancybox\").fancybox({
-		openEffect	: 'none',
-		closeEffect	: 'none'
-	});
-});"))
+		    :href "plugins/dataTables/Responsive-2.1.1/css/responsive.dataTables.min.css"))
 	    
-	    (:body :class "hold-transition skin-blue fixed"
-	        
-		   (:div :class "wrapper"
-			 ,@navbar)
-		   (:div :class "content-wrapper"
-			 (:section :class "content"
-	     ,@body))))))
+	   	    
+	    (:body 
+	        ,@navbar		   	       
+		(:div :class "container"
+		      (:div :class "section"
+		       ,@body))))))
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
   `(with-html-output (*standard-output* nil :indent t)
    
 		     (:div :class "row"
-			   (:div :class "col-md-3"
+			   (:div :class "col s12 md3"
 				 
 				 ,@bodythree)
 			 
-			   (:div :class "col-md-9"
+			   (:div :class "col s12 md9"
 				 ,@bodynine))))
 
 (defmacro standard-login ()
   `(with-html-output (*standard-output* nil :indent t)
-      
- (:div :class "register-page"
-	  (:div :class "register-box"
+      	(:heading (:h2 :class "center" "Welcome to RILEY"))
+     (:div :class "row red darken-4"
+	   (:div :class "col s12 m6"
 		
-	  (:div :class "register-logo"
-		(:b "RILEY Inventory System"))
-	  (:div :class "register-box-body"
-	  (:p :class "login-box-msg" "Register a new account")
+	   (:div :class "card blue-grey darken-1"
+		 (:div :class "card-content white-text"      
 	  (:form :action "/adduser"
 		 :method "POST"
 		 :id "commentform"
-		 (:div :class "form-group has-feedback"
-		 (:span :class "form-control-feedback"
-			:id "basic-addon1" "@")
+		 (:div :class "input-field col s12"
 		 (:input :type "text"
 			 :class "form-control"
-			 :placeholder "Username"
 			 :name "username"
-			 :aria-describedby "basic-addon1"
-			 :id "username"))
-		 (:div :class "form-group has-feedback"
-		       (:span :class "form-control-feedback"
-			      :id "basic-addon1" "$")      
+			 :id "username")
+		 (:label :class "white-text" :for "username" "Username"))
+
+		 (:div :class "input-field col s6"
 		 (:input :type "password"
-			 :placeholder "Password"
 			 :name "password"
 			 :class "form-control"
-			 :aria-describedby "basic-addon1"
-			 :id "password"))
-		 
-		 (:div :class "form-group has-feedback"
-		       (:span :class "form-control-feedback"
-			      :id "basic-addon1" "$")
-		       (:input :type "password"
-			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Repeat Password"
+			 :id "password")
+		 (:label :class "white-text" :for "password" "Password"))
+
+		 (:div :class "input-field col s6"
+		 (:input :type "password"
+			 :class "form-control"
 			 :name "password-repeat"
-			 :id "password-repeat"))
+			 :id "password-repeat")
+		 (:label :class "white-text" :for "password-repeat" "Repeat"))
 	        
-	        
+		 (:div :class "center"
 		  (:button :type "submit"
-			  :class "btn btn-primary btn-block btn-flat"
-			  "Create Account")))
+			  :class "btn waves-effect waves-light"
+			  "Create Account"
+			  (:i :class "material-icons right" "send")))))))
     
-	  (:div :class "register-box-body"
-        
+	  (:div :class "col m6 s12"
+		(:div :class "card teal"
+		      (:div :class "card-content white-text"
+			   
+			    
 	  (:form :action "/check-login"
 		 :method "POST"
 		 :id "commentform"
-		 (:div :class "form-group has-feedback"
-		       (:span :class "form-control-feedback"
-			      :id "basic-addon1" "@")
+		 (:div :class "input-field col s12"
 		       (:input :type "text"
 			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Username"
-			 :name "username"
-			 :id "username"))
-		 (:div :class "form-group has-feedback"
+			       :name "username"
+			       :id "username")
+		       (:label :class "white-text" :for "username" "Username"))
+		 
+		 (:div :class "input-field col s12"
 		      
 		       (:input :type "password"
 			       :class "form-control"
-			       :aria-describedby "basic-addon1"
-			 :placeholder "Password"
-			 :name "password"
-			 :id "password")
-		        (:span :class "form-control-feedback"
-			      :id "basic-addon1" "$"))
-	        
+			       :name "password"
+			       :id "password")
+		       (:label :class "white-text" :for "password" "Password"))
+	        (:div :class "center"
 	         (:button :type "submit"
-			  :class "btn btn-primary btn-flat btn-block"
-			  "Login")))))))
-
-(defmacro standard-navbar ()
-  `(with-html-output (*standard-output* nil :indent t)
-     (:nav :class "navbar navbar-default" :role "navigation"
-	   (:div :class "container-fluid"
-		 (:div :class "navbar-header"
-		       (:button :type "button"
-				:class "navbar-toggle collapsed"
-				:data-toggle "collapsed"
-				:data-target "#collapsible"
-				(:span :class "sr-only" "Toggle navigation")
-				(:span :class "icon-bar")
-				(:span :class "icon-bar")))
-		 (:div :class "collapse navbar-collapse"
-		       :id "collapsible"
-		       (:ul :class "nav navbar-nav"
-			    (:li (:a :href "/dashboard" "Timeline"))
-			    (:li (:a :href (concatenate 'string "/profile/" (cookie-in "current-user"))  "Profile"))
-			    (:li (:a :href "/write-order" "Write Order"))
-			    (:li (:a :href "/check-in-order" "Check-in Order")))
-		       (:ul :class "nav navbar-nav navbar-right"
-			    (:li (:a :href "/signout" "Sign out"))
-			    (:li (:a :href "/checkinlist" "Check In"))))))))
+			  :class "btn waves-effect waves-light"
+			  "Login"
+			  (:i :class "material-icons right" "send"))))))))))
+     
 
 (defmacro test-navbar ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:aside :class "main-sidebar"
-	     (:section :class "sidebar"
-		       (:div :class "user-panel"
-			     (:div :class "pull-left image"
-				   (:img :class "img-circle" :src "img/littlec.jpg"))
-			     (:div :class "pull-left info" (fmt "~a" (escape-string (cookie-in "current-user")))
-				   (:br)
-			     (:a :href "#" (:i :class "fa fa-circle text-success") "Online")))
-		       
-		       (:ul :class "sidebar-menu"
-			    (:li :class "header" "Essential")
-			    (:li :class "treeview active"
-				 (:a :href "/dashboard" (:i :class "fa fa-link")
-							    (:span "Dashboard")))
-			    (:li :class "treeview active"
-				 (:a :href "/write-order" (:i :class "fa fa-circle")
-				     (:span "Write Order")))
-			    (:li :class "treeview active"
-				 (:a :href "/checkinlist" (:i :class "fa fa-check-square")
-				     (:span "Check-in Order")))
-			    (:li :class "treeview active"
-				 (:a :href "/signout" (:i :class "fa fa-sign-out")
-				     (:span "Sign Out"))))))))
+     (:header 
+     (:nav :class "red darken-4"
+	 
+		 (:div :class "nav-wrapper"
+		       (:a :class "brand-logo" "CAPS")
+	         
+		       (:a :href "#" :data-activates "mobile-demo" :class "button-collapse"
+			   (:i :class "material-icons" "menu"))
+
+		       (:ul :class "right hide-on-med-and-down"
+			    (:li (:a :href "/dashboard" "Dashboard"))
+			    (:li (:a :href "/write-order" "Write Order"))
+			    (:li (:a :href "/checkinlist" "Show List"))
+			    (:li (:a :href "/signout" "Sign Out")))
+		  
+		       (:ul :class "side-nav" :id "mobile-demo"
+			    (:li (:a :href "/dashboard" "Dashboard"))
+			    (:li (:a :href "/write-order" "Write Order"))
+			    (:li (:a :href "/checkinlist" "Show List"))
+			    (:li (:a :href "/signout" "Sign Out")))
+		       (:script "$('.button-collapse').sideNav();"))))))
 
 (defmacro standard-dashboard (&key messages)
   `(with-html-output (*standard-output* nil :indent t)	     
-     (:div :class "panel panel-default"
-	   (:div :class "panel-heading user-brief"
-		 (:h1 "Dashboard")
+     (:div :class "row"
+	   (:div :class "col s12 m12"
+		 (:h1 :class "center" "Dashboard")
+		 (:div :class "row"
 		 (:form :role "form"
 			:action "/addmessage"
-			:method "post"
-			:class "form-inline"
-			(:div :class "form-group"
-			      (:label :class "sr-only" :for "tweet" "Say Something")
-			      (:input :type "text" :class "form-control"
-				      :id "message" :name "message"
-				      :placeholder "Post a message")
-			      (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))
-	   
-		 ,messages))
-
+			:method "post"		      
+			(:div :class "input-field col s12"
+			      (:label :for "say-something" "Post a message!")
+			      (:input :type "text" :class "validate"
+				      :id "message" :name "message")
+			      (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))	   
+		 ,messages)))
+(defun pair-off (lst)
+  (cond
+    ((null lst) '())
+    ((> (length lst) 1) (list (list (car lst) (cadr lst)) (pair-off (cddr lst))))
+    ((<= (length lst) 1) (list (car lst) '()))))
+    
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
-   
-     (:ul :class "timeline"
-	  (:li :class "time-label"
-	       (:span :class "bg-red"
-     (dolist (messages (find-global-messages)) 
+     (:div :class "row"
+	   (:div :class "col s12 m6"
+     (dolist (messages (find-global-messages))
        (htm
-	(:li (:i :class "fa fa-envelope bg-blue")
-	(:div :class "timeline-item"
-	   (:div :class "timeline-header"
-		 (:a :class "pull-left" :href (concatenate 'string "/profile/" (message-sender messages))))
-	   (:div :class "timeline-body"
-		 (:h4 :class "media-heading"
+	(:div :class "card"
+	   (:div :class "card-content"
+		 (:span :class "card-title" (:h4 
 		      (:a :href (concatenate 'string "/profile/" (message-sender messages))
-			  (fmt "~A" (escape-string (message-sender messages)))))
+			  (fmt "~A" (escape-string (message-sender messages))))))
 		 
-		 (fmt "~A" (escape-string (message-content messages))))
-	   (if (find-invoice-from-message messages)
+		 (fmt "~A" (escape-string (message-content  messages))))
+	   (if (message-invoice-name messages)
 	       (htm
-		(:div :class "timeline-footer"
-		      (:form :action "/pre-set-cookies"
-			     :method "POST"
-			     (:input :type "hidden" :name "showname" :value (show-name (find-invoice-from-message messages)))
-			     (:input :type "hidden" :name "setname" :value (invoice-set-name (find-invoice-from-message messages)))
-			     (:input :type "hidden" :name "contact" :value (invoice-contact-name (find-invoice-from-message messages)))
-			     (:button :type "submit" :class "btn btn-default btn-sm btn-flat btn-info" "Write Order"))))))))))))))
+		(:div :class "card-action"
+		      (:a :href "#" "Order")
+		      (:a :href "#" "Show")
+		      (:a :href "#" "Check In")))))))))))
+
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
-  `(with-html-output (*standard-output* nil :indent t)
-    
-	   (:div :class "box" :id "write-up-box"
-		 
-		 (:div :class "box-header" :id "box-picture" 
-		       (:center (:img :id "input-picture" :src ,image :class "img-responsive"
+  `(with-html-output (*standard-output* nil :indent t)	 
+     (:div :class "card" :id "box-picture"
+	   (:div :class "card-content"
+		 (:span :class "card-title"
+		       (:center (:img :id "input-picture" :src ,image :class "img-responsive materialboxed"
 				      :width "40%" :height "40%" :name ,image)))
-		 (:div :class  "box-body" 
+	         
 		 (:form 
 			:action "/additem"
 			:method "POST"
 			:id "new-item"
-			(:div :class "form-group has-feedback "
+			(:div :class "input-field s12"
 			      (:label :for "inputDesc" "Description")
-			      (:span :class "form-control-feedback")
+			    
 			      (:input :type "text" :class "form-control"
-				      :id "input-item-description" :placeholder "Item Description"
+				      :id "input-item-description"
 				      :name "input-item-description"))
-			(:div :class "form-group has-feedback"
-			      (:span :class "form-control-feedback")
+			(:div :class "input-field s6"
+			    
 			      (:label :for "inputPrice" "Price")
 			      (:input :type "text" :class "form-control"
-				      :id "input-item-price" :placeholder "Item Price"
+				      :id "input-item-price"
 				      :name "input-item-price"))
-			(:div :class "form-group has-feedback"
-			      (:span :class "form-control-feedback")
+			(:div :class "input-field s6"
+			     
 			      (:label :for "inputQty" "Quantity")
 			      (:input :type "text" :class "form-control"
-				      :id "input-item-qty" :placeholder "Item Quantity"
+				      :id "input-item-qty"
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
-			(:button :type "submit" :class "btn btn-info btn-default btn-flat btn-block" "Add item")
-			(:button :type "button" :class "btn btn-warning btn-default btn-flat btn-block"
-				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures"))
+			(:button :type "submit" :class "btn waves-effect waves-light" "Add item")
+			(:button :type "button" :class "btn waves-effect waves-light"
+				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures")))
 		 (:div :id "form-messages")
-		 (:script :src "plugins/custom/ajax-item.js")
+		 ;(:script :src "plugins/custom/ajax-item.js")
 
 		 (:div :id "myModal" :class "modal fade" :role "dialog"
 		       (:div :class "modal-dialog"
@@ -583,46 +514,49 @@
 								  :name "image-name" :value img)
 							  (:input :type "image" :id "saveform" :class "img-responsive"
 								  :width "40%" :height "40%" :src img
-								  :alt "Submit Form")))))))))))))
+								  :alt "Submit Form"))))))))))))
 		      				      
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "panel panel-default"
-	   (:div :class "panel-body" (:form :class "form-inline"
+     
+     (:div :class "card blue-grey"
+	   (:div :class "card-content white-text"
+	   (:form 
 	    :action "/createInvoice"
 	    :method "POST"
 	    :id "New-invoice-form"
-	    (:div :class "form-group"
-		  (:label :for "inputShow" "Show")
+	    (:div :class "input-field col s12"
+		  (:label :class "white-text" :for "inputShow" "Show")
 		  (:input :type "text" :class "form-control" :id "inputShowname"
-			  :placeholder "Showname" :name "inputShowname"))
-	    (:div :class "form-group"
-		  (:label :for "inputSet" "Set")
-		  (:input :type "text" :class "form-control" :id "inputSetname"
-			  :placeholder "Set Name" :name "inputSetname"))
-	    (:div :class "form-group"
-		  (:label :for "inputContact" "Contact Name")
+			  :name "inputShowname"))
+	    (:div :class "input-field col s6 m6 l6"
+		  (:label :class "white-text" :for "inputSet" "Set")
+		  (:input :type "text" :class "white-text" :id "inputSetname"
+			  :name "inputSetname"))
+	    (:div :class "input-field col s6 m6 l6"
+		  (:label :class "white-text" :for "inputContact" "Contact Name")
 		  (:input :type "text" :class "form-control" :id "inputContact"
-			  :placeholder "Contact Name" :name "inputContact"))
-	    (:button :type "submit" :class "btn btn-default" "Write Show Order"))))))
+			  :name "inputContact"))
+	    (:div :class "center"
+	    (:button :type "submit" :class "btn waves-effect waves-light" "Write Show Order" (:i :class "material-icons right" "send"))))))))
 
 (defmacro standard-picture-table (&key image-list)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-default collapsed-box"
-	   (:div :class "box-header with-border"
+     (:div :class ""
+	   (:div :class ""
 		 "List of pictures to be written up"
 		 (:div :class "box-tools pull-right"
 		       (:button :class "btn btn-box-tool" :data-widget "collapse"
 				(:i :class "fa fa-plus"))))
 	   (:div :class "box-body"
 		    (dolist (image ,image-list)
-		      (htm (:div :class "col-md-3 col-sm-4 col-xs-6"
+		      (htm (:div :class ""
 				 (:img :src image :class "img-responsive"
 				       :width "40%" :height "40%"))))))))
 
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container panel panel-default"
+     (:div :class "container"
 	   (:table :class "table table-bordered table-striped"
 		   (:thead
 		    (:tr
@@ -645,32 +579,28 @@
 					    :name "setname" :id "setname")
 				    (:input :type "hidden" :value (show-name invoice)
 					    :name "showname" :id "showname")
-				    (:button :type "submit" :class "btn btn-default btn-sm btn-info"
+				    (:button :type "submit" :class "btn btn-small"
 					     "Check In")))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box"
-	   (:div :class "box-header")
-		 
-     (:div :class "box-body"
-	  (:table :id "itemlist" :class "table table-bordered table-striped"
-		 (:thead
-		 
-		  (:tr
-		   (:th "Description")
-		   (:th "Price")
-		   (:th "Quantity")
-		   (:th "Remove?")))
-		 (:tbody
+     (:div :class "row"
+	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :placeholder "Search for items")
+	   (:script :src "plugins/search.js")
+	   (:ul :id "myUL"
 		  (dolist (item (invoice-item-list ,invoice))
 		    (htm
-		     (:tr
-		      
-		      (:td (fmt "~A" (escape-string (item-description item))))
-		      (:td (fmt "~A" (escape-string (item-price item))))
-		      (:td (fmt "~A" (escape-string (item-quantity item))))
-		      (:td (:form :class "form-inline"
+		     (:li
+		     (:div :class "col s12 m6 l6"
+			   (:div :class "card"
+				 (:div :class "card-image"
+				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed")
+				       (:span :class "black card-title" (fmt "~A" (escape-string (item-description item)))))
+				 (:div :class "card-content"
+		      (:div :class "chip" (fmt "Price: ~A" (escape-string (item-price item))))
+		      (:div :class "chip" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
+				 (:div :class "card-action"
+		      (:form :class "form-inline"
 			     :action "/removeitem"
 			     :method "POST"
 			     :id "item-table"
@@ -685,16 +615,16 @@
 			     (if (string= (item-returned-on item) "")
 				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
 				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
-					       (fmt "Check in on ~A" (escape-string (item-returned-on item)))))))))))))
+					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))))))
 ;;;Force remove option may be necessary due to this
-	  (:script "$(\"#itemlist\").DataTable();")))))
+
 	  
      
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box"
-	   (:div :class "box-body"
+     (:div :class "card"
+	   (:div :class "card-content"
 		 (:table :id "checkinlist" :class "table table-bordered table-striped"
 			 (:thead
 			  (:tr
@@ -708,11 +638,8 @@
 			    (htm
 		
 			     (:tr
-			      (:td (:a :class "fancybox"
-				       :id "fancybox"
-				       :rel "gallery1"
-				       :href (item-picture item)
-				       (:img :src (item-picture item) :class "img-responsive"
+			      (:td 
+				       (:img :src (item-picture item) :class "img-responsive materialboxed"
 					     :width "40%" :height "40%")))
 					       
 			      (:td (fmt "~A" (escape-string (item-description item))))
@@ -730,16 +657,16 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Check in"))))))))
-		 (:script "$(\"#checkinlist\").DataTable();")))))
+					  (:button :type "submit" :class "btn" "Check in"))))))))
+		 (:script "$(\"#checkinlist\").DataTable();"))))
 		 
 		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-success"
-	   (:div :class "box-header"
-		 (:h3 "Upload to this order"))
-	   (:div :class "box-body"
+     (:div :class "card"
+	   (:div :class "card-content"
+		(:span :class "card-title" (:h5 "Upload"))
+	   
 		 (:form :action "/displayimagegot"
 			:class "form-inline"
 			:method "POST"
@@ -756,31 +683,29 @@
 
 (defmacro standard-pdf-iframe (&key pdf)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-default collapsed-box"
-	   (:div :class "box-header with-border"
-		 "PDF"
-	   (:div :class "box-tools pull-right"
-		 (:button :class "btn btn-box-tool" :data-widget "collapse" (:i :class "fa fa-plus"))))
-	   (:div :class "box-body"
 	   (:iframe :id "iframepdf"
 		    :height "600"
 		    :width "100%"
-		    :src ,pdf)))))
+		    :src ,pdf)))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "box box-info" :id "invoice-writing-box"
-	   (:div :class "box-body"
-		 (:ul :class "list-group"
-		      (:li :class "list-group-item list-group-item-success" ,show)
-		      (:li :class "list-group-item list-group-item-danger" ,set)
-		      (:li :class "list-group-item list-group-item-success" ,contact)
-		      (:li :class "list-group-item list-group-item-danger" ,pic-num))
-		 (:a :href "/createpdf" (:button :type "submit" :class "btn btn-default btn-sm btn-info"
+     (:div :class "card blue-grey" :id "invoice-writing-box"
+	   (:div :class "card-content"
+		 (:div :class " black-text chip s3 m3 l3"
+		       ,show)
+		 (:div :class "black-text chip s3 m3 l3"
+		       ,set)
+		 (:br)
+		 (:div :class "black-text chip s3 m3 l3"
+		       ,contact)
+		 (:div :class "black-text chip s3 m3 l3"
+		       ,pic-num)
+		 (:br)
+		 (:a :href "/createpdf" (:button :type "submit" :class "btn waves-effect waves-light"
 						 "Create PDF"))
-		 (:a :href "/check-in-set" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Check-in Items"))
-		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn btn-default btn-sm btn-info" "Invoice homepage"))
-		 (:a :href "/finalizeinvoice" (:button :type "submit" :class "btn btn-default btn-sm btn-warning" "Finalize Invoice"))))))
+		 (:a :href "/check-in-set" (:button :type "submit" :class "btn waves-effect waves-light" "Check-in Items"))
+		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn waves-effect waves-light" "Invoice Home"))))))
 
 ;;;Define page handler functions
 
@@ -808,7 +733,16 @@
 		    :content (concatenate 'string "An order has been started for " showname
 					   " for set " setname
 					   " ordered by " contact )
-		    :invoice-name (list setname showname contact *global-invoice-id*)))
+		    :invoice-name (let ((shn showname)
+					(stn setname)
+					(cont contact))
+				    (lambda ()
+					       (find-invoice-from-invoice
+						(make-instance 'invoice
+							       :set-name stn
+							       :show-name shn
+							       :contact-name cont))))))
+				    
   (redirect "/dashboard"))
 
 ;;;Basic function to create a new show		      
@@ -865,7 +799,6 @@
 		     if (equal (car post-parameter) "picture-batch")
 				    collect post-parameter)))
     (standard-page (:title "Picture Batch")
-      (standard-navbar)
       (mapc #'(lambda (x)
 		(format t "~A ~A ~A ~A <br>"  (first x)
 			(second x)
@@ -982,8 +915,8 @@
 	(standard-item-writeup :image (first images-filtered)
 			       :full-images (rest images-filtered))
 	(standard-item-list-table :invoice invoice)
-	(standard-pdf-iframe :pdf (invoice-pdf-location invoice))
-	(standard-picture-table :image-list (rest images-filtered))))))
+	(standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
+        
 
 (defun sort-item-list (itemlist pic-need)
   (if (string= pic-need "")
@@ -1000,7 +933,7 @@
 (defun prepare-for-table (fad-list)
         (mapcar #'(lambda (x)
 	      (let ((string-path-image (namestring x)))
-		    (subseq (namestring string-path-image) 54)))
+		    (subseq (namestring string-path-image) 68)))
 		(remove-if #'(lambda (x)
 			       (cl-fad:directory-exists-p x))
 			   fad-list)))
