@@ -459,9 +459,10 @@
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "row"
-	   (:div :class "col s12 m6"
+	 
      (dolist (messages (find-global-messages))
        (htm
+	(:div :class "col s12 m6 l6"
 	(:div :class "card"
 	   (:div :class "card-content"
 		 (:span :class "card-title" (:h4 
@@ -997,7 +998,7 @@
 	     (redirect "/login"))
 	(redirect "/badpassword"))))
 
-;;;For the love of McCarthy please turn this into a macro already
+
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
    (standard-login)))
