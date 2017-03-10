@@ -320,21 +320,18 @@
 	     ;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/dataTables/datatables.min.css")
-	     (:script :src "plugins/dataTables/datatables.min.js")
-	     (:script :src "plugins/dataTables/Responsive-2.1.1/js/dataTables.responsive.min.js")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/dataTables/Responsive-2.1.1/css/responsive.dataTables.min.css"))
-	    
+	     (:script :src "plugins/jq-input.js"))
 	   	    
 	    (:body 
 	        ,@navbar		   	       
 		(:div :class "container"
 		      (:div :class "section"
-		       ,@body))))))
+			    ,@body)))
+	    (:footer :class "page-footer red darken-4"
+		     (:div :class "container"
+			   (:div :class "row"
+				 (:h5 :class "center white-text" "Made with Powerful Parenthesis")))))))
+	   
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
   `(with-html-output (*standard-output* nil :indent t)
@@ -420,7 +417,7 @@
      (:nav :class "red darken-4"
 	 
 		 (:div :class "nav-wrapper"
-		       (:a :class "brand-logo" "CAPS")
+		       (:a :class "center brand-logo" "CAPS")
 	         
 		       (:a :href "#" :data-activates "mobile-demo" :class "button-collapse"
 			   (:i :class "material-icons" "menu"))
@@ -481,41 +478,48 @@
 
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
-  `(with-html-output (*standard-output* nil :indent t)	 
-     (:div :class "card" :id "box-picture"
-	   (:div :class "card-content"
-		 (:span :class "card-title"
-		       (:center (:img :id "input-picture" :src ,image :class "img-responsive materialboxed"
-				      :width "40%" :height "40%" :name ,image)))
-	         
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "section"
+	   (:div :class "row blue-grey"
+		   (:div :class "col s12 m6 l6"
+		 (:div :class "card"
+		       (:div :class "card-image"
+		 	 (:img :id "input-picture" :src ,image  :class  "materialboxed responsive-img" :name ,image))))
+	   (:div :class "col s12 m6 l6"
+	
+		 (:div :class "card" :id "box-picture"
+	  
+		       
+	         (:div :class "card-content"
 		 (:form 
 			:action "/additem"
 			:method "POST"
 			:id "new-item"
-			(:div :class "input-field s12"
-			      (:label :for "inputDesc" "Description")
+			(:div :class "input-field col s12 l12 m12"
+			      (:label :for "inputDesc" :class "black-text"  "Description")
 			    
-			      (:input :type "text" :class "form-control"
+			      (:input :type "text" 
 				      :id "input-item-description"
 				      :name "input-item-description"))
-			(:div :class "input-field s6"
+			(:div :class "input-field col s12 l6 m6"
 			    
-			      (:label :for "inputPrice" "Price")
-			      (:input :type "text" :class "form-control"
+			      (:label :for "inputPrice" :class "black-text"  "Price")
+			      (:input :type "text" 
 				      :id "input-item-price"
 				      :name "input-item-price"))
-			(:div :class "input-field s6"
+			(:div :class "input-field col s12 m6 l6"
 			     
-			      (:label :for "inputQty" "Quantity")
-			      (:input :type "text" :class "form-control"
+			      (:label :for "inputQty" :class "black-text" "Quantity")
+			      (:input :type "text" 
 				      :id "input-item-qty"
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
-			(:button :type "submit" :class "btn waves-effect waves-light" "Add item")
-			(:button :type "button" :class "btn waves-effect waves-light"
-				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures")))
-		 (:div :id "form-messages")
+			(:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
+			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
+				 :data-toggle "modal" :data-target "#myModal" "Switch")))))))
+	 
+        
 		 ;(:script :src "plugins/custom/ajax-item.js")
 
 		 (:div :id "myModal" :class "modal fade" :role "dialog"
@@ -533,7 +537,7 @@
 								  :name "image-name" :value img)
 							  (:input :type "image" :id "saveform" :class "img-responsive"
 								  :width "40%" :height "40%" :src img
-								  :alt "Submit Form"))))))))))))
+								  :alt "Submit Form")))))))))))
 		      				      
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -557,21 +561,7 @@
 		  (:input :type "text" :class "form-control" :id "inputContact"
 			  :name "inputContact"))
 	    (:div :class "center"
-	    (:button :type "submit" :class "btn waves-effect waves-light" "Write Show Order" (:i :class "material-icons right" "send"))))))))
-
-(defmacro standard-picture-table (&key image-list)
-  `(with-html-output (*standard-output* nil :indent t)
-     (:div :class ""
-	   (:div :class ""
-		 "List of pictures to be written up"
-		 (:div :class "box-tools pull-right"
-		       (:button :class "btn btn-box-tool" :data-widget "collapse"
-				(:i :class "fa fa-plus"))))
-	   (:div :class "box-body"
-		    (dolist (image ,image-list)
-		      (htm (:div :class ""
-				 (:img :src image :class "img-responsive"
-				       :width "40%" :height "40%"))))))))
+	    (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Write Show Order" (:i :class "material-icons right" "send"))))))))
 
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
@@ -598,26 +588,28 @@
 					    :name "setname" :id "setname")
 				    (:input :type "hidden" :value (show-name invoice)
 					    :name "showname" :id "showname")
-				    (:button :type "submit" :class "btn btn-small"
+				    (:button :type "submit" :class "red darken-4 btn btn-small"
 					     "Check In")))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "row"
-	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :placeholder "Search for items")
+   (:div :class "row"
+	  (:div :class "input-field col s12 l6 m6"
+	    (:label :for "myInput" :class "black-text" "Search")
+	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
 	   (:script :src "plugins/search.js")
 	   (:ul :id "myUL"
 		  (dolist (item (invoice-item-list ,invoice))
 		    (htm
 		     (:li
 		     (:div :class "col s12 m6 l6"
-			   (:div :class "card"
+			   (:div :class "card blue-grey"
 				 (:div :class "card-image"
-				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed")
+				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
 				       (:span :class "black card-title" (fmt "~A" (escape-string (item-description item)))))
 				 (:div :class "card-content"
-		      (:div :class "chip" (fmt "Price: ~A" (escape-string (item-price item))))
-		      (:div :class "chip" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
+		      (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
+		      (:div :class "chip black-text" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
 				 (:div :class "card-action"
 		      (:form :class "form-inline"
 			     :action "/removeitem"
@@ -632,7 +624,7 @@
 			     (:input :type "hidden" :value ,invoice
 				     :name "invoice" :id "invoice")
 			     (if (string= (item-returned-on item) "")
-				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
+				 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
 				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
 					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))))))
 ;;;Force remove option may be necessary due to this
@@ -642,30 +634,26 @@
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card"
-	   (:div :class "card-content"
-		 (:table :id "checkinlist" :class "table table-bordered table-striped"
-			 (:thead
-			  (:tr
-			   (:th "Picture")
-			   (:th "Description")
-			   (:th "QTY")
-			   (:th "Price")
-			   (:th "Check?")))
-			 (:tbody
+     (:div :class "row"
+	   (:div :class "input-field col s12 l6 m6"
+		 (:label :for "myInput" :class "black-text" "Search")
+	   (:input :type "text" :id "myInput" :class "black-text" :onkeyup "myFunction()"))
+	   (:ul :id "myUL"
 			  (dolist (item (remove-returned (invoice-item-list ,invoice)))
 			    (htm
-		
-			     (:tr
-			      (:td 
-				       (:img :src (item-picture item) :class "img-responsive materialboxed"
-					     :width "40%" :height "40%")))
+			     (:li
+			     (:div :class "col s12 m6 l6"
+				   (:div :class "card blue-grey"
+					 (:div :class "card-image"
+					       (:img :src (item-picture item) :class "materialboxed responsive-img")
+					       (:span :class "card-title black" (fmt "~A" (escape-string (item-description item)))))
+					 (:div :class "card-content"
 					       
-			      (:td (fmt "~A" (escape-string (item-description item))))
-			      (:td (fmt "~A" (escape-string (item-quantity item))))
-			      (:td (fmt "~A" (escape-string (item-price item))))
-			      (:td
-			       (:form :class "form-inline"
+			    
+					       (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
+					       (:div :class "chip black-text"  (fmt "Quantity: ~A" (escape-string (item-quantity item))))
+			      (:div :class "card-action"
+			       (:form 
 					  :action "/check-in-item"
 					  :method "POST"
 					  :id "check-in-table"
@@ -676,29 +664,29 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "btn" "Check in"))))))))
-		 (:script "$(\"#checkinlist\").DataTable();"))))
+					  (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check in"))))))))))
+			  (:script :src "plugins/search.js"))))
+        
 		 
 		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card"
-	   (:div :class "card-content"
-		(:span :class "card-title" (:h5 "Upload"))
-	   
-		 (:form :action "/displayimagegot"
-			:class "form-inline"
+     (:div :class "row"
+	   (:div :class "col s12 m12 l12"
+		 (:form :action "/displayimagegot"	        
 			:method "POST"
 			:enctype "multipart/form-data"
 			:id "new-picture-upload"
-			(:div :class "form-group"
-			      (:input
-			       :multiple "multiple"
-			       :id "picture-batch"
-			       :name "picture-batch"
-			       :type "file"
-			       :name "img")
-			      (:input :type "submit")))))))
+			(:div
+			 (:input
+			  :class "btn"
+			  :multiple "multiple"
+			  :id "picture-batch"
+			  :name "picture-batch"
+			  :type "file"
+			  :name "img")
+			 (:button :type "submit" :height "10%" :width "10%"  :class "blue-grey btn waves-effect waves-light" "Upload")))))
+     (:script :src "plugins/input-upload.js")))
 
 (defmacro standard-pdf-iframe (&key pdf)
   `(with-html-output (*standard-output* nil :indent t)
@@ -709,22 +697,24 @@
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card blue-grey" :id "invoice-writing-box"
-	   (:div :class "card-content"
+     (:br)
+     (:div :class "row"
+	   (:div :class "col s12 m6 l6"
 		 (:div :class " black-text chip s3 m3 l3"
 		       ,show)
 		 (:div :class "black-text chip s3 m3 l3"
 		       ,set)
-		 (:br)
 		 (:div :class "black-text chip s3 m3 l3"
 		       ,contact)
 		 (:div :class "black-text chip s3 m3 l3"
-		       ,pic-num)
-		 (:br)
-		 (:a :href "/createpdf" (:button :type "submit" :class "btn waves-effect waves-light"
-						 "Create PDF"))
-		 (:a :href "/check-in-set" (:button :type "submit" :class "btn waves-effect waves-light" "Check-in Items"))
-		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn waves-effect waves-light" "Invoice Home"))))))
+		       ,pic-num))
+	   (:div :class "col s12 m6 l6"
+		
+        
+		 (:a :href "/createpdf" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light"
+						 "PDF"))
+		 (:a :href "/check-in-set" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check"))
+		 (:a :href "/setthemcookies" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Invoice"))))))
 
 ;;;Define page handler functions
 
@@ -886,7 +876,11 @@
 	(setname (invoice-set-name invoice)))
       (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
         (:navbar (test-navbar))
-	(standard-invoice-writing)
+	(standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
+				   :set (fmt "~A" (escape-string setname))
+				   :contact (fmt "~A" (escape-string (invoice-contact-name invoice)))
+				   :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+													   "-" setname)))))
 	(standard-check-in :invoice invoice))))
 	
 
@@ -920,9 +914,9 @@
       (:navbar (test-navbar))
       (standard-three-nine-hook
 	    (:bodythree
-		((standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
-				   :set (fmt "Setname: ~A" (escape-string setname))
-				   :contact (fmt "Contact: ~A" (escape-string contact))
+		((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
+				   :set (fmt "~A" (escape-string setname))
+				   :contact (fmt "~A" (escape-string contact))
 				   :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
 													   "-" setname)))))
 		 (standard-picture-upload)))
@@ -959,8 +953,8 @@
 	"0"
 	(let* ((invoice (find-invoice-from-cookie inv))
 	       (invoice-pathname (invoice-root-dir invoice)))
-	  (concatenate 'string "There are " (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
-		       " pictures on this order"))))
+	  (concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
+		       " pictures on order"))))
 
 (defun filtered-length (directory-list)
   (length (remove-if #'(lambda (x)
