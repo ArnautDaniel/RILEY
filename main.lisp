@@ -581,16 +581,8 @@
 			(:td (fmt "~A" (escape-string (show-name invoice))))
 			(:td (fmt "~A" (escape-string (invoice-set-name invoice))))
 			(:td (fmt "~A" (escape-string (invoice-contact-name invoice))))
-			(:td (:form :class "form-inline"
-				    :action "/check-in-set-pre"
-				    :method "POST"
-				    :id "item-table"
-				    (:input :type "hidden" :value (invoice-set-name invoice)
-					    :name "setname" :id "setname")
-				    (:input :type "hidden" :value (show-name invoice)
-					    :name "showname" :id "showname")
-				    (:button :type "submit" :class "red darken-4 btn btn-small"
-					     "Check In")))))))))))
+			(:td (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (show-name invoice) (invoice-set-name invoice))
+				 :class "btn" "Check In"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
@@ -864,11 +856,9 @@
     (standard-check-in-showlist)))
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
-(define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") ()
-    (let* ((showname (hunchentoot:post-parameter "showname"))
-	   (setname (hunchentoot:post-parameter "setname")))
+(define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") (showname setname)
       (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
-      (redirect "/check-in-set")))
+      (redirect "/check-in-set"))
 
 ;;;Presents a table of items that have not been checked in yet
 (define-easy-handler (checkinset :uri "/check-in-set") ()
