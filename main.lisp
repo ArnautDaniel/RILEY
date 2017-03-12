@@ -201,6 +201,17 @@
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
 
+
+(defun string-web-safe (stg)
+  (let* ((poz (position #\' stg))
+	 (sanitized-first (subseq stg 0 poz))
+	 (sanitized-last (subseq stg (+ poz 1))))
+    (concatenate 'string sanitized-first "&#39;" sanitized-last)))
+
+(defun web-safep (stg)
+  (if (position #\' stg)
+      (string-web-safe stg)
+      stg))
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
 (defun remove-returned (inv-itemlist)
@@ -566,23 +577,21 @@
 
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container"
-	   (:table :class "table table-bordered table-striped"
-		   (:thead
-		    (:tr
-		     (:th "Show Name")
-		     (:th "Set Name")
-		     (:th "Contact")
-		     (:th "Check In")))
-		   (:tbody
+     (:div :class "row"
 		    (dolist (invoice *global-invoice-list*)
 		      (htm
-		       (:tr
-			(:td (fmt "~A" (escape-string (show-name invoice))))
-			(:td (fmt "~A" (escape-string (invoice-set-name invoice))))
-			(:td (fmt "~A" (escape-string (invoice-contact-name invoice))))
-			(:td (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (show-name invoice) (invoice-set-name invoice))
-				 :class "btn" "Check In"))))))))))
+		       (:div :class "col s12 m4 l4"
+			     (:div :class "card"
+				   (:div :class "card-content"
+					 (:span :class "card-title" (:h5
+								     (fmt "~A" (escape-string (show-name invoice)))))
+					
+				       
+			(:div :class "chip black-text"  (fmt "Set: ~A" (escape-string (invoice-set-name invoice))))
+			(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string (invoice-contact-name invoice))))
+			(:div :class "card-action"
+			      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
+				 :class "btn waves-effect waves-light" "Show Page"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
