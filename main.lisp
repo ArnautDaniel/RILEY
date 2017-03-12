@@ -1037,7 +1037,7 @@
 
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
-\\newpage")
+\\newpage  ")
 
 
 (defparameter document-conf "\\documentclass{invoice} % Use the custom invoice class (invoice.cls)
@@ -1118,12 +1118,13 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       (princ tail-conf s)
       (princ begin-img-table s)
       (mapc (lambda (b) (princ (format-picture b) s)
-		    (fresh-line s)) (invoice-item-list invoice))
+		    (fresh-line s))
+	    (picture-list (invoice-item-list invoice)))
       (princ end-img-table s)
       (princ end-document s))
 
     (trivial-shell:shell-command (concatenate 'string "pdflatex "
-					      "-output-directory="
+					      "-interaction=nonstopmode -output-directory="
 					      root-dir "pdf/"
 					      " " complete-stream))
     (setf (invoice-pdf-location invoice)
@@ -1138,11 +1139,39 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-price b) "}{"
 	       (item-returned-on b) "}"))
 
+(defun subseq-img (b)
+  (if (null b)
+      ""
+      (subseq (item-picture b)
+	      (+ (search "webimg" (item-picture b)) 7))))
+
+
+;;;I know this is ugly as sin.  I'm tired
+;;;I'll fix it in a little bit.
+
 (defun format-picture (b)
   (concatenate 'string picrow
-	       (subseq (item-picture b)
-		       (+ (search "webimg" (item-picture b)) 7)) "}"))
-	       
+	       (if (null (first b))
+		   ""
+		   (item-description (first b)))
+	       "}"
+	       "{"(subseq-img (first b)) "}{"
+	       (if (null (second b))
+		   ""
+		   (item-description  (second b)))
+	       "}{"
+	       (subseq-img (second b)) "}{"
+	       (if (null (third b))
+		   ""
+		   (item-description  (third b)))
+	       "}{"
+	       (subseq-img (third b)) "}"))
+
+(defun picture-list (b)
+  (cond
+    ((null b) nil)
+    (t
+      (cons (list (car b) (cadr b) (third b)) (picture-list (cdddr b))))))
 ;;;Alot of the latex code was ported from the racket version and has already been tested alot
 ;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
