@@ -17,15 +17,34 @@ $(function() {
                 'image-data': imageloc.name
             },
             success: function() {
-                var table = document.getElementById('itemlist');
-                var row = table.insertRow(1);
-                var cell1 = row.insertCell(0);
-                var cell2 = row.insertCell(1);
-                var cell3 = row.insertCell(2);
-                var cell4 = row.insertCell(3);
-                cell1.innerHTML = desc;
-                cell2.innerHTML = price;
-                cell3.innerHTML = qty;
+               $('#myUL').prepend("
+<li>
+  <div class='col s12 m6 l6'>
+    <div class='card blue-grey'>
+      <div class='card-image'>
+        <img src='/show-bank/HatersGets/FreakingQuotes/webimg/FreakingQuotes-HatersGets-2.jpg' width='25%' height='25%' class='materialboxed responsive-img'>
+        <span class='black card-title'>Panda
+        </span>
+      </div>
+      <div class='card-content'>
+        <div class='chip black-text'>Price: 2
+        </div>
+        <div class='chip black-text'>Quantity: 2
+        </div>
+      </div>
+      <div class='card-action'>
+        <form class='form-inline' action='/removeitem' method='POST' id='item-table'>
+          <input type='hidden' value='Panda' name='item' id='item'>
+          <input type='hidden' value='2' name='item-price' id='item-price'>
+          <input type='hidden' value='2' name='item-quantity' id='item-quantity'>
+          <input type='hidden' value='#<INVOICE #x3020025A957D>' name='invoice' id='invoice'>
+<button type='submit' class='red darken-4 btn btn-default btn-sm btn-danger'>Remove
+</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</li>")
                 var newimg = $("#image-name");
 
                 if ($("#image-name").attr("value") == null) {

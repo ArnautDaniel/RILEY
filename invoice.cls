@@ -52,7 +52,7 @@
 	}
 
 	\begin{longtable}{|c|c|c|}
-	{\bf Item Images} & {\bf Item Images} & {\bf Item Images} \\
+	{\bf Item} & {\bf Item} & {\bf Item} \\
 	\hline \hline
 	\endhead
 }{ \hline

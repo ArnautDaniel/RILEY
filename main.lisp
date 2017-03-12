@@ -206,12 +206,19 @@
   (let* ((poz (position #\' stg))
 	 (sanitized-first (subseq stg 0 poz))
 	 (sanitized-last (subseq stg (+ poz 1))))
-    (concatenate 'string sanitized-first "&#39;" sanitized-last)))
+    (web-safep (concatenate 'string sanitized-first "&#39;" sanitized-last))))
+    
 
 (defun web-safep (stg)
   (if (position #\' stg)
       (string-web-safe stg)
       stg))
+
+(defun directory-safe (stg)
+  (remove-if #'(lambda (x)
+		 (or (char= x #\ )
+		     (char= x #\')))
+	     stg))
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
 (defun remove-returned (inv-itemlist)
@@ -298,9 +305,9 @@
     (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				     :name image-name)
 		      (make-pathname :directory (concatenate 'string invoice-location "webimg/")
-				     :name new-img-name) :overwrite t)
+				     :name (directory-safe new-img-name)) :overwrite t)
     (let* ((new-img-path (make-pathname :directory (concatenate 'string invoice-location "webimg/")
-					:name new-img-name))
+					:name (directory-safe new-img-name)))
 	   (img (read-jpeg-file new-img-path)))
     (write-jpeg-file new-img-path (resize-image img 1200 1600))))
     (setf (invoice-id-num current-invoice) (+ (invoice-id-num current-invoice) 1))
@@ -529,28 +536,29 @@
 	        
 			(:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
 			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
-				 :data-toggle "modal" :data-target "#myModal" "Switch")))))))
+				 :data-target "myModal" "Switch")))))))
 	 
         
 		 ;(:script :src "plugins/custom/ajax-item.js")
 
-		 (:div :id "myModal" :class "modal fade" :role "dialog"
-		       (:div :class "modal-dialog"
-			     (:div :class "modal-content"
-				   (:div :class "modal-header"
-					 (:button :type "button" :class "close" :data-dismiss "modal" "Close")
-					 (:h4 :class "modal-title" "Switch or Add multiple pictures")
-					 (:div :class "modal-body" :id "modalImg"
-					        (dolist (img ,full-images)
-						  (htm 
-						   (:form :action "/swapitemposition"
-							  :method "POST"
-							  (:input :type "hidden" :id "image-name"
-								  :name "image-name" :value img)
-							  (:input :type "image" :id "saveform" :class "img-responsive"
-								  :width "40%" :height "40%" :src img
-								  :alt "Submit Form")))))))))))
-		      				      
+     (:div :id "myModal" :class "modal bottom-sheet" 
+		      
+	   (:div :class "modal-content"
+				   
+		 (:h4 "Switch Pictures")
+				        
+		 (dolist (img ,full-images)
+		   (htm
+		    (:div :class "col s12 m6 l6"
+		    (:form :action "/swapitemposition"
+			   :method "POST"
+			   (:input :type "hidden" :id "image-name"
+				   :name "image-name" :value img)
+			   (:input :type "image" :id "saveform" :class "img-responsive"
+				   :width "100%" :height "50%" :src img
+				   :alt "Submit Form"))))))
+     (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
+
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
      
@@ -591,7 +599,9 @@
 			(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string (invoice-contact-name invoice))))
 			(:div :class "card-action"
 			      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
-				 :class "btn waves-effect waves-light" "Show Page"))))))))))
+				  :class "chip blue-grey" "Check-in")
+			      (:a :href (format nil "pre-set-cookies?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
+				  :class "chip blue-grey" "Invoice"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
@@ -599,7 +609,8 @@
 	  (:div :class "input-field col s12 l6 m6"
 	    (:label :for "myInput" :class "black-text" "Search")
 	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
-	   (:script :src "plugins/search.js")
+	  (:script :src "plugins/search.js")
+	  (:div :id "itemlist"
 	   (:ul :id "myUL"
 		  (dolist (item (invoice-item-list ,invoice))
 		    (htm
@@ -628,7 +639,7 @@
 			     (if (string= (item-returned-on item) "")
 				 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
 				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
-					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))))))
+					       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))))))))))))))
 ;;;Force remove option may be necessary due to this
 
 	  
@@ -695,7 +706,7 @@
 	   (:iframe :id "iframepdf"
 		    :height "600"
 		    :width "100%"
-		    :src ,pdf)))
+		    :src (concatenate 'string (web-safep ,pdf) "?name="))))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
@@ -730,8 +741,8 @@
 	 (root-dir (concatenate 'string (directory-namestring (acceptor-document-root *acceptor*))
 				"show-bank"
 				"/"
-				 showname
-				"/" setname "/")))
+				 (directory-safe showname)
+				"/" (directory-safe setname) "/")))
     (ensure-directories-exist root-dir)
     (register-invoice :id-num (+ *global-invoice-id* 1)
 		      :set-name setname
@@ -821,10 +832,9 @@
 
 ;;;Current solution to being able to refresh pages without putting data in the URI
 ;;;May need to start putting data in the URI but the function works pretty decently already.
-(define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") ()
-  (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
-						    "-"
-						    (hunchentoot:post-parameter "setname")))
+(define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") (showname setname)
+   (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+						 
   (redirect "/setthemcookies"))
 
 ;;;Adds an item from the additem panel on the write order page
@@ -1008,12 +1018,17 @@
 (defparameter header-name "\\dotfill \\textsc{Ordered by:} ")
 (defparameter header-set "\\dotfill \\textsc{Set:} ")
 (defparameter header-show "\\dotfill \\textsc{Show:} ")
-(defparameter date-header "\\tab {\\bf Pickup Date:} \\today \\dotfill")
+(defparameter date-header "\\\\ {\\bf Pickup Date:} \\today \\dotfill")
 (defparameter rental-period "{\\bf {Rental Period:}")
 (defparameter begin-table "\\begin{invoiceTable}")
 (defparameter end-table "\\end{invoiceTable}")
 (defparameter unitrow "\\unitrow{")
+(defparameter begin-img-table "\\begin{pictureTable}")
+(defparameter end-img-table "\\end{pictureTable}")
+(defparameter end-document "\\end{document}")
+(defparameter begin-document "\\begin{document}")
 
+(defparameter picrow "\\picrow{")
 ;;;Takes an invoice and root-dir
 
 (defparameter tail-conf "
@@ -1022,8 +1037,7 @@
 
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
-\\newpage
-\\end{document}")
+\\newpage")
 
 
 (defparameter document-conf "\\documentclass{invoice} % Use the custom invoice class (invoice.cls)
@@ -1038,9 +1052,8 @@
 \\usepackage{pgffor}
 \\usepackage{caption}
 \\usepackage{expl3}
+")
 
-
-\\begin{document}")
 
 (defparameter heading-conf "
 \\hfil{\\huge\\color{red}{\\textsc{Checkout Sheet}}}\\hfil
@@ -1053,20 +1066,20 @@ Ste. 000 \\hfill{ \\emph{Office:} (000) 000-0000} \\\\
 % Your address and contact information
 Norfolk, Georgia 00000 \\hfill anon@anon.com
 \\\\ \\\\
-{\\bf Invoice To:} \\\\ % From here --->")
+{\\bf Invoice To:} \\\\ ")
 
 ;;;Latex Functions----------------------------------------------
 (defun generate-invoice-single-header (invoice func)
-  (concatenate 'string  func invoice))
+  (concatenate 'string  func invoice " "))
 
 (defun generate-latex (invoice root-dir)
   (ensure-directories-exist (concatenate 'string root-dir
 					 "pdf/"))
-  (let* ((pdfname (concatenate 'string "pdf/" (show-name invoice)
-			       "-" (invoice-set-name invoice)
+  (let* ((pdfname (concatenate 'string "pdf/" (directory-safe (show-name invoice))
+			       "-" (directory-safe (invoice-set-name invoice))
 			       ".tex"))
-	 (ironic-tex-name (concatenate 'string "pdf/" (show-name invoice)
-				       "-" (invoice-set-name invoice)
+	 (ironic-tex-name (concatenate 'string "pdf/" (directory-safe (show-name invoice))
+				       "-" (directory-safe (invoice-set-name invoice))
 				       ".pdf"))
 	 (complete-stream (concatenate 'string root-dir
 				       pdfname))
@@ -1074,7 +1087,13 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 					ironic-tex-name)))
     (with-open-file (s complete-stream :direction :output
 		       :if-exists :supersede)
+      
       (princ document-conf s)
+      (princ (concatenate 'string
+			  "\\graphicspath{ {"
+			  (invoice-root-dir invoice)
+			  "webimg/}}") s)
+      (princ begin-document s)
       (fresh-line s)
       (princ heading-conf s)
       (princ (generate-invoice-single-header
@@ -1083,8 +1102,10 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	      (invoice-set-name invoice) header-set) s)
       (princ (generate-invoice-single-header
 	      (invoice-contact-name invoice) header-name) s)
+      
       (fresh-line s)
       (fresh-line s)
+   
       (princ date-header s)
       (princ rental-period s)
       (fresh-line s)
@@ -1094,7 +1115,12 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 		    (fresh-line s)) (invoice-item-list invoice))
       (princ end-table s)
       (fresh-line s)
-      (princ tail-conf s))
+      (princ tail-conf s)
+      (princ begin-img-table s)
+      (mapc (lambda (b) (princ (format-picture b) s)
+		    (fresh-line s)) (invoice-item-list invoice))
+      (princ end-img-table s)
+      (princ end-document s))
 
     (trivial-shell:shell-command (concatenate 'string "pdflatex "
 					      "-output-directory="
@@ -1111,7 +1137,12 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-quantity b) "}{"
 	       (item-price b) "}{"
 	       (item-returned-on b) "}"))
-    
+
+(defun format-picture (b)
+  (concatenate 'string picrow
+	       (subseq (item-picture b)
+		       (+ (search "webimg" (item-picture b)) 7)) "}"))
+	       
 ;;;Alot of the latex code was ported from the racket version and has already been tested alot
 ;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
