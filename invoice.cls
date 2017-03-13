@@ -10,7 +10,7 @@
 \usepackage{calc} % Counters for totaling hours and cost
 \usepackage{longtable}
 \usepackage[table]{xcolor}
-
+\usepackage{subfig}
 % Define color of grey lines
 \definecolor{lightgray}{gray}{0.9}
 
@@ -45,19 +45,23 @@
 %------------------------------------
 % Generate Table of Images
 %------------------------------------
+
+
 \newenvironment{pictureTable}{
-	\newcommand*{\picrow}[3]{
-		\includegraphics[height=4cm]{##1} & \includegraphics[height=4cm]{##2} &
-		\includegraphics[height=4cm]{##3} \\
-	}
-
-	\begin{longtable}{|c|c|c|}
-	{\bf Item} & {\bf Item} & {\bf Item} \\
-	\hline \hline
-	\endhead
-}{ \hline
-	\end{longtable}
-
+  \newcommand*{\picrow}[6]{
+    \subfloat[##1]{\includegraphics[width=2.3in]{##2}} &
+    \subfloat[##3]{\includegraphics[width=2.3in]{##4}} &
+    \subfloat[##5]{\includegraphics[width=2.3in]{##6}} \\
+  }
+  
+  \begin {figure}
+    \renewcommand*\thesubfigure{\arabic{subfigure}}
+  \begin{tabular}{ccc}
+    
+}{ 
+  \end{tabular}
+  \end{figure}
+  
 }
 
 %-----------------------------------
