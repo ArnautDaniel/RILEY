@@ -5,7 +5,8 @@
 	:cl-pass
 	:hunchentoot
 	:parenscript
-	:trivial-shell))
+	:trivial-shell
+	:opticl))
 
 (defvar *current-message-list* '())
 (defvar *global-invoice-list* '())
@@ -200,6 +201,24 @@
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
 
+
+(defun string-web-safe (stg)
+  (let* ((poz (position #\' stg))
+	 (sanitized-first (subseq stg 0 poz))
+	 (sanitized-last (subseq stg (+ poz 1))))
+    (web-safep (concatenate 'string sanitized-first "&#39;" sanitized-last))))
+    
+
+(defun web-safep (stg)
+  (if (position #\' stg)
+      (string-web-safe stg)
+      stg))
+
+(defun directory-safe (stg)
+  (remove-if #'(lambda (x)
+		 (or (char= x #\ )
+		     (char= x #\')))
+	     stg))
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
 (defun remove-returned (inv-itemlist)
@@ -274,6 +293,24 @@
 				     :name image-name)
 		      (make-pathname :directory invoice-location
 				     :name image-name) :overwrite t)
+    (ensure-directories-exist (concatenate 'string invoice-location "webimg/"))
+    (let* ((new-img-name (concatenate 'string (invoice-set-name current-invoice)
+							"-"
+							(show-name current-invoice)
+							"-"
+						        (write-to-string (invoice-id-num current-invoice))
+							".jpg")))
+
+      
+    (cl-fad:copy-file (make-pathname :directory temp-image-directory
+				     :name image-name)
+		      (make-pathname :directory (concatenate 'string invoice-location "webimg/")
+				     :name (directory-safe new-img-name)) :overwrite t)
+    (let* ((new-img-path (make-pathname :directory (concatenate 'string invoice-location "webimg/")
+					:name (directory-safe new-img-name)))
+	   (img (read-jpeg-file new-img-path)))
+    (write-jpeg-file new-img-path (resize-image img 1200 1600))))
+    (setf (invoice-id-num current-invoice) (+ (invoice-id-num current-invoice) 1))
     (delete-file (make-pathname :directory temp-image-directory
 				:name image-name))))
 
@@ -301,21 +338,18 @@
 	     ;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/dataTables/datatables.min.css")
-	     (:script :src "plugins/dataTables/datatables.min.js")
-	     (:script :src "plugins/dataTables/Responsive-2.1.1/js/dataTables.responsive.min.js")
-	     (:link :type "text/css"
-		    :rel "stylesheet"
-		    :href "plugins/dataTables/Responsive-2.1.1/css/responsive.dataTables.min.css"))
-	    
+	     (:script :src "plugins/jq-input.js"))
 	   	    
 	    (:body 
 	        ,@navbar		   	       
 		(:div :class "container"
 		      (:div :class "section"
-		       ,@body))))))
+			    ,@body)))
+	    (:footer :class "page-footer red darken-4"
+		     (:div :class "container"
+			   (:div :class "row"
+				 (:h5 :class "center white-text" "Made with Powerful Parenthesis")))))))
+	   
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
   `(with-html-output (*standard-output* nil :indent t)
@@ -401,7 +435,7 @@
      (:nav :class "red darken-4"
 	 
 		 (:div :class "nav-wrapper"
-		       (:a :class "brand-logo" "CAPS")
+		       (:a :class "center brand-logo" "CAPS")
 	         
 		       (:a :href "#" :data-activates "mobile-demo" :class "button-collapse"
 			   (:i :class "material-icons" "menu"))
@@ -443,9 +477,10 @@
 (defmacro standard-global-messages ()
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "row"
-	   (:div :class "col s12 m6"
+	 
      (dolist (messages (find-global-messages))
        (htm
+	(:div :class "col s12 m6 l6"
 	(:div :class "card"
 	   (:div :class "card-content"
 		 (:span :class "card-title" (:h4 
@@ -462,60 +497,68 @@
 
 
 (defmacro standard-item-writeup (&key image full-images invoice-data)
-  `(with-html-output (*standard-output* nil :indent t)	 
-     (:div :class "card" :id "box-picture"
-	   (:div :class "card-content"
-		 (:span :class "card-title"
-		       (:center (:img :id "input-picture" :src ,image :class "img-responsive materialboxed"
-				      :width "40%" :height "40%" :name ,image)))
-	         
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "section"
+	   (:div :class "row blue-grey"
+		   (:div :class "col s12 m6 l6"
+		 (:div :class "card"
+		       (:div :class "card-image"
+		 	 (:img :id "input-picture" :src ,image  :class  "materialboxed responsive-img" :name ,image))))
+	   (:div :class "col s12 m6 l6"
+	
+		 (:div :class "card" :id "box-picture"
+	  
+		       
+	         (:div :class "card-content"
 		 (:form 
 			:action "/additem"
 			:method "POST"
 			:id "new-item"
-			(:div :class "input-field s12"
-			      (:label :for "inputDesc" "Description")
+			(:div :class "input-field col s12 l12 m12"
+			      (:label :for "inputDesc" :class "black-text"  "Description")
 			    
-			      (:input :type "text" :class "form-control"
+			      (:input :type "text" 
 				      :id "input-item-description"
 				      :name "input-item-description"))
-			(:div :class "input-field s6"
+			(:div :class "input-field col s12 l6 m6"
 			    
-			      (:label :for "inputPrice" "Price")
-			      (:input :type "text" :class "form-control"
+			      (:label :for "inputPrice" :class "black-text"  "Price")
+			      (:input :type "text" 
 				      :id "input-item-price"
 				      :name "input-item-price"))
-			(:div :class "input-field s6"
+			(:div :class "input-field col s12 m6 l6"
 			     
-			      (:label :for "inputQty" "Quantity")
-			      (:input :type "text" :class "form-control"
+			      (:label :for "inputQty" :class "black-text" "Quantity")
+			      (:input :type "text" 
 				      :id "input-item-qty"
 				      :name "input-item-qty"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
-			(:button :type "submit" :class "btn waves-effect waves-light" "Add item")
-			(:button :type "button" :class "btn waves-effect waves-light"
-				 :data-toggle "modal" :data-target "#myModal" "Switch Item or Add Multiple Pictures")))
-		 (:div :id "form-messages")
+			(:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
+			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
+				 :data-target "myModal" "Switch")))))))
+	 
+        
 		 ;(:script :src "plugins/custom/ajax-item.js")
 
-		 (:div :id "myModal" :class "modal fade" :role "dialog"
-		       (:div :class "modal-dialog"
-			     (:div :class "modal-content"
-				   (:div :class "modal-header"
-					 (:button :type "button" :class "close" :data-dismiss "modal" "Close")
-					 (:h4 :class "modal-title" "Switch or Add multiple pictures")
-					 (:div :class "modal-body" :id "modalImg"
-					        (dolist (img ,full-images)
-						  (htm 
-						   (:form :action "/swapitemposition"
-							  :method "POST"
-							  (:input :type "hidden" :id "image-name"
-								  :name "image-name" :value img)
-							  (:input :type "image" :id "saveform" :class "img-responsive"
-								  :width "40%" :height "40%" :src img
-								  :alt "Submit Form"))))))))))))
-		      				      
+     (:div :id "myModal" :class "modal bottom-sheet" 
+		      
+	   (:div :class "modal-content"
+				   
+		 (:h4 "Switch Pictures")
+				        
+		 (dolist (img ,full-images)
+		   (htm
+		    (:div :class "col s12 m6 l6"
+		    (:form :action "/swapitemposition"
+			   :method "POST"
+			   (:input :type "hidden" :id "image-name"
+				   :name "image-name" :value img)
+			   (:input :type "image" :id "saveform" :class "img-responsive"
+				   :width "100%" :height "50%" :src img
+				   :alt "Submit Form"))))))
+     (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
+
 (defmacro standard-order-intro ()
   `(with-html-output (*standard-output* nil :indent t)
      
@@ -538,67 +581,48 @@
 		  (:input :type "text" :class "form-control" :id "inputContact"
 			  :name "inputContact"))
 	    (:div :class "center"
-	    (:button :type "submit" :class "btn waves-effect waves-light" "Write Show Order" (:i :class "material-icons right" "send"))))))))
-
-(defmacro standard-picture-table (&key image-list)
-  `(with-html-output (*standard-output* nil :indent t)
-     (:div :class ""
-	   (:div :class ""
-		 "List of pictures to be written up"
-		 (:div :class "box-tools pull-right"
-		       (:button :class "btn btn-box-tool" :data-widget "collapse"
-				(:i :class "fa fa-plus"))))
-	   (:div :class "box-body"
-		    (dolist (image ,image-list)
-		      (htm (:div :class ""
-				 (:img :src image :class "img-responsive"
-				       :width "40%" :height "40%"))))))))
+	    (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Write Show Order" (:i :class "material-icons right" "send"))))))))
 
 (defmacro standard-check-in-showlist ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "container"
-	   (:table :class "table table-bordered table-striped"
-		   (:thead
-		    (:tr
-		     (:th "Show Name")
-		     (:th "Set Name")
-		     (:th "Contact")
-		     (:th "Check In")))
-		   (:tbody
+     (:div :class "row"
 		    (dolist (invoice *global-invoice-list*)
 		      (htm
-		       (:tr
-			(:td (fmt "~A" (escape-string (show-name invoice))))
-			(:td (fmt "~A" (escape-string (invoice-set-name invoice))))
-			(:td (fmt "~A" (escape-string (invoice-contact-name invoice))))
-			(:td (:form :class "form-inline"
-				    :action "/check-in-set-pre"
-				    :method "POST"
-				    :id "item-table"
-				    (:input :type "hidden" :value (invoice-set-name invoice)
-					    :name "setname" :id "setname")
-				    (:input :type "hidden" :value (show-name invoice)
-					    :name "showname" :id "showname")
-				    (:button :type "submit" :class "btn btn-small"
-					     "Check In")))))))))))
+		       (:div :class "col s12 m4 l4"
+			     (:div :class "card"
+				   (:div :class "card-content"
+					 (:span :class "card-title" (:h5
+								     (fmt "~A" (escape-string (show-name invoice)))))
+					
+				       
+			(:div :class "chip black-text"  (fmt "Set: ~A" (escape-string (invoice-set-name invoice))))
+			(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string (invoice-contact-name invoice))))
+			(:div :class "card-action"
+			      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
+				  :class "chip blue-grey" "Check-in")
+			      (:a :href (format nil "pre-set-cookies?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
+				  :class "chip blue-grey" "Invoice"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "row"
-	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :placeholder "Search for items")
-	   (:script :src "plugins/search.js")
+   (:div :class "row"
+	  (:div :class "input-field col s12 l6 m6"
+	    (:label :for "myInput" :class "black-text" "Search")
+	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
+	  (:script :src "plugins/search.js")
+	  (:div :id "itemlist"
 	   (:ul :id "myUL"
 		  (dolist (item (invoice-item-list ,invoice))
 		    (htm
 		     (:li
 		     (:div :class "col s12 m6 l6"
-			   (:div :class "card"
+			   (:div :class "card blue-grey"
 				 (:div :class "card-image"
-				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed")
+				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
 				       (:span :class "black card-title" (fmt "~A" (escape-string (item-description item)))))
 				 (:div :class "card-content"
-		      (:div :class "chip" (fmt "Price: ~A" (escape-string (item-price item))))
-		      (:div :class "chip" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
+		      (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
+		      (:div :class "chip black-text" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
 				 (:div :class "card-action"
 		      (:form :class "form-inline"
 			     :action "/removeitem"
@@ -613,9 +637,9 @@
 			     (:input :type "hidden" :value ,invoice
 				     :name "invoice" :id "invoice")
 			     (if (string= (item-returned-on item) "")
-				 (htm (:button :type "submit" :class "btn btn-default btn-sm btn-danger" "Remove"))
+				 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
 				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
-					       (fmt "RTN'D ~A" (escape-string (item-returned-on item)))))))))))))))))
+					       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))))))))))))))
 ;;;Force remove option may be necessary due to this
 
 	  
@@ -623,30 +647,26 @@
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card"
-	   (:div :class "card-content"
-		 (:table :id "checkinlist" :class "table table-bordered table-striped"
-			 (:thead
-			  (:tr
-			   (:th "Picture")
-			   (:th "Description")
-			   (:th "QTY")
-			   (:th "Price")
-			   (:th "Check?")))
-			 (:tbody
+     (:div :class "row"
+	   (:div :class "input-field col s12 l6 m6"
+		 (:label :for "myInput" :class "black-text" "Search")
+	   (:input :type "text" :id "myInput" :class "black-text" :onkeyup "myFunction()"))
+	   (:ul :id "myUL"
 			  (dolist (item (remove-returned (invoice-item-list ,invoice)))
 			    (htm
-		
-			     (:tr
-			      (:td 
-				       (:img :src (item-picture item) :class "img-responsive materialboxed"
-					     :width "40%" :height "40%")))
+			     (:li
+			     (:div :class "col s12 m6 l6"
+				   (:div :class "card blue-grey"
+					 (:div :class "card-image"
+					       (:img :src (item-picture item) :class "materialboxed responsive-img")
+					       (:span :class "card-title black" (fmt "~A" (escape-string (item-description item)))))
+					 (:div :class "card-content"
 					       
-			      (:td (fmt "~A" (escape-string (item-description item))))
-			      (:td (fmt "~A" (escape-string (item-quantity item))))
-			      (:td (fmt "~A" (escape-string (item-price item))))
-			      (:td
-			       (:form :class "form-inline"
+			    
+					       (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
+					       (:div :class "chip black-text"  (fmt "Quantity: ~A" (escape-string (item-quantity item))))
+			      (:div :class "card-action"
+			       (:form 
 					  :action "/check-in-item"
 					  :method "POST"
 					  :id "check-in-table"
@@ -657,55 +677,57 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "btn" "Check in"))))))))
-		 (:script "$(\"#checkinlist\").DataTable();"))))
+					  (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check in"))))))))))
+			  (:script :src "plugins/search.js"))))
+        
 		 
 		 
 (defmacro standard-picture-upload ()
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card"
-	   (:div :class "card-content"
-		(:span :class "card-title" (:h5 "Upload"))
-	   
-		 (:form :action "/displayimagegot"
-			:class "form-inline"
+     (:div :class "row"
+	   (:div :class "col s12 m12 l12"
+		 (:form :action "/displayimagegot"	        
 			:method "POST"
 			:enctype "multipart/form-data"
 			:id "new-picture-upload"
-			(:div :class "form-group"
-			      (:input
-			       :multiple "multiple"
-			       :id "picture-batch"
-			       :name "picture-batch"
-			       :type "file"
-			       :name "img")
-			      (:input :type "submit")))))))
+			(:div
+			 (:input
+			  :class "btn"
+			  :multiple "multiple"
+			  :id "picture-batch"
+			  :name "picture-batch"
+			  :type "file"
+			  :name "img")
+			 (:button :type "submit" :height "10%" :width "10%"  :class "blue-grey btn waves-effect waves-light" "Upload")))))
+     (:script :src "plugins/input-upload.js")))
 
 (defmacro standard-pdf-iframe (&key pdf)
   `(with-html-output (*standard-output* nil :indent t)
 	   (:iframe :id "iframepdf"
 		    :height "600"
 		    :width "100%"
-		    :src ,pdf)))
+		    :src (concatenate 'string (web-safep ,pdf) "?name="))))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
-     (:div :class "card blue-grey" :id "invoice-writing-box"
-	   (:div :class "card-content"
+     (:br)
+     (:div :class "row"
+	   (:div :class "col s12 m6 l6"
 		 (:div :class " black-text chip s3 m3 l3"
 		       ,show)
 		 (:div :class "black-text chip s3 m3 l3"
 		       ,set)
-		 (:br)
 		 (:div :class "black-text chip s3 m3 l3"
 		       ,contact)
 		 (:div :class "black-text chip s3 m3 l3"
-		       ,pic-num)
-		 (:br)
-		 (:a :href "/createpdf" (:button :type "submit" :class "btn waves-effect waves-light"
-						 "Create PDF"))
-		 (:a :href "/check-in-set" (:button :type "submit" :class "btn waves-effect waves-light" "Check-in Items"))
-		 (:a :href "/setthemcookies" (:button :type "submit" :class "btn waves-effect waves-light" "Invoice Home"))))))
+		       ,pic-num))
+	   (:div :class "col s12 m6 l6"
+		
+        
+		 (:a :href "/createpdf" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light"
+						 "PDF"))
+		 (:a :href "/check-in-set" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check"))
+		 (:a :href "/setthemcookies" (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Invoice"))))))
 
 ;;;Define page handler functions
 
@@ -719,8 +741,8 @@
 	 (root-dir (concatenate 'string (directory-namestring (acceptor-document-root *acceptor*))
 				"show-bank"
 				"/"
-				 showname
-				"/" setname "/")))
+				 (directory-safe showname)
+				"/" (directory-safe setname) "/")))
     (ensure-directories-exist root-dir)
     (register-invoice :id-num (+ *global-invoice-id* 1)
 		      :set-name setname
@@ -800,10 +822,6 @@
 				    collect post-parameter)))
     (standard-page (:title "Picture Batch")
       (mapc #'(lambda (x)
-		(format t "~A ~A ~A ~A <br>"  (first x)
-			(second x)
-			(third x)
-			(fourth x))
 		(rename-file (second x)
 			     (concatenate 'string "/tmp/"
 					  (third x)) :if-exists :supersede)
@@ -814,10 +832,9 @@
 
 ;;;Current solution to being able to refresh pages without putting data in the URI
 ;;;May need to start putting data in the URI but the function works pretty decently already.
-(define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") ()
-  (set-cookie "current-invoice" :value (concatenate 'string (hunchentoot:post-parameter "showname")
-						    "-"
-						    (hunchentoot:post-parameter "setname")))
+(define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") (showname setname)
+   (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+						 
   (redirect "/setthemcookies"))
 
 ;;;Adds an item from the additem panel on the write order page
@@ -858,11 +875,9 @@
     (standard-check-in-showlist)))
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
-(define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") ()
-    (let* ((showname (hunchentoot:post-parameter "showname"))
-	   (setname (hunchentoot:post-parameter "setname")))
+(define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") (showname setname)
       (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
-      (redirect "/check-in-set")))
+      (redirect "/check-in-set"))
 
 ;;;Presents a table of items that have not been checked in yet
 (define-easy-handler (checkinset :uri "/check-in-set") ()
@@ -871,7 +886,11 @@
 	(setname (invoice-set-name invoice)))
       (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
         (:navbar (test-navbar))
-	(standard-invoice-writing)
+	(standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
+				   :set (fmt "~A" (escape-string setname))
+				   :contact (fmt "~A" (escape-string (invoice-contact-name invoice)))
+				   :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+													   "-" setname)))))
 	(standard-check-in :invoice invoice))))
 	
 
@@ -898,16 +917,16 @@
 	 (setname (invoice-set-name invoice))
 	 (contact (invoice-contact-name invoice))
 	 (change-pic-cookie (cookie-in "current-picture"))
-	 (images (prepare-for-table (cl-fad:list-directory (invoice-root-dir invoice))))
+	 (images (prepare-for-table (cl-fad:list-directory (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
 	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
       (:navbar (test-navbar))
       (standard-three-nine-hook
 	    (:bodythree
-		((standard-invoice-writing :show  (fmt "Showname: ~A" (escape-string showname))
-				   :set (fmt "Setname: ~A" (escape-string setname))
-				   :contact (fmt "Contact: ~A" (escape-string contact))
+		((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
+				   :set (fmt "~A" (escape-string setname))
+				   :contact (fmt "~A" (escape-string contact))
 				   :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
 													   "-" setname)))))
 		 (standard-picture-upload)))
@@ -944,8 +963,8 @@
 	"0"
 	(let* ((invoice (find-invoice-from-cookie inv))
 	       (invoice-pathname (invoice-root-dir invoice)))
-	  (concatenate 'string "There are " (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
-		       " pictures on this order"))))
+	  (concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
+		       " pictures on order"))))
 
 (defun filtered-length (directory-list)
   (length (remove-if #'(lambda (x)
@@ -988,7 +1007,7 @@
 	     (redirect "/login"))
 	(redirect "/badpassword"))))
 
-;;;For the love of McCarthy please turn this into a macro already
+
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
    (standard-login)))
@@ -999,12 +1018,17 @@
 (defparameter header-name "\\dotfill \\textsc{Ordered by:} ")
 (defparameter header-set "\\dotfill \\textsc{Set:} ")
 (defparameter header-show "\\dotfill \\textsc{Show:} ")
-(defparameter date-header "\\tab {\\bf Pickup Date:} \\today \\dotfill")
+(defparameter date-header "\\\\ {\\bf Pickup Date:} \\today \\dotfill")
 (defparameter rental-period "{\\bf {Rental Period:}")
 (defparameter begin-table "\\begin{invoiceTable}")
 (defparameter end-table "\\end{invoiceTable}")
 (defparameter unitrow "\\unitrow{")
+(defparameter begin-img-table "\\begin{pictureTable}")
+(defparameter end-img-table "\\end{pictureTable}")
+(defparameter end-document "\\end{document}")
+(defparameter begin-document "\\begin{document}")
 
+(defparameter picrow "\\picrow{")
 ;;;Takes an invoice and root-dir
 
 (defparameter tail-conf "
@@ -1013,8 +1037,7 @@
 
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
-\\newpage
-\\end{document}")
+\\newpage  ")
 
 
 (defparameter document-conf "\\documentclass{invoice} % Use the custom invoice class (invoice.cls)
@@ -1029,9 +1052,8 @@
 \\usepackage{pgffor}
 \\usepackage{caption}
 \\usepackage{expl3}
+")
 
-
-\\begin{document}")
 
 (defparameter heading-conf "
 \\hfil{\\huge\\color{red}{\\textsc{Checkout Sheet}}}\\hfil
@@ -1044,20 +1066,20 @@ Ste. 000 \\hfill{ \\emph{Office:} (000) 000-0000} \\\\
 % Your address and contact information
 Norfolk, Georgia 00000 \\hfill anon@anon.com
 \\\\ \\\\
-{\\bf Invoice To:} \\\\ % From here --->")
+{\\bf Invoice To:} \\\\ ")
 
 ;;;Latex Functions----------------------------------------------
 (defun generate-invoice-single-header (invoice func)
-  (concatenate 'string  func invoice))
+  (concatenate 'string  func invoice " "))
 
 (defun generate-latex (invoice root-dir)
   (ensure-directories-exist (concatenate 'string root-dir
 					 "pdf/"))
-  (let* ((pdfname (concatenate 'string "pdf/" (show-name invoice)
-			       "-" (invoice-set-name invoice)
+  (let* ((pdfname (concatenate 'string "pdf/" (directory-safe (show-name invoice))
+			       "-" (directory-safe (invoice-set-name invoice))
 			       ".tex"))
-	 (ironic-tex-name (concatenate 'string "pdf/" (show-name invoice)
-				       "-" (invoice-set-name invoice)
+	 (ironic-tex-name (concatenate 'string "pdf/" (directory-safe (show-name invoice))
+				       "-" (directory-safe (invoice-set-name invoice))
 				       ".pdf"))
 	 (complete-stream (concatenate 'string root-dir
 				       pdfname))
@@ -1065,7 +1087,13 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 					ironic-tex-name)))
     (with-open-file (s complete-stream :direction :output
 		       :if-exists :supersede)
+      
       (princ document-conf s)
+      (princ (concatenate 'string
+			  "\\graphicspath{ {"
+			  (invoice-root-dir invoice)
+			  "webimg/}}") s)
+      (princ begin-document s)
       (fresh-line s)
       (princ heading-conf s)
       (princ (generate-invoice-single-header
@@ -1074,8 +1102,10 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	      (invoice-set-name invoice) header-set) s)
       (princ (generate-invoice-single-header
 	      (invoice-contact-name invoice) header-name) s)
+      
       (fresh-line s)
       (fresh-line s)
+   
       (princ date-header s)
       (princ rental-period s)
       (fresh-line s)
@@ -1085,10 +1115,16 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 		    (fresh-line s)) (invoice-item-list invoice))
       (princ end-table s)
       (fresh-line s)
-      (princ tail-conf s))
+      (princ tail-conf s)
+      (princ begin-img-table s)
+      (mapc (lambda (b) (princ (format-picture b) s)
+		    (fresh-line s))
+	    (picture-list (invoice-item-list invoice)))
+      (princ end-img-table s)
+      (princ end-document s))
 
     (trivial-shell:shell-command (concatenate 'string "pdflatex "
-					      "-output-directory="
+					      "-interaction=nonstopmode -output-directory="
 					      root-dir "pdf/"
 					      " " complete-stream))
     (setf (invoice-pdf-location invoice)
@@ -1102,7 +1138,40 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (item-quantity b) "}{"
 	       (item-price b) "}{"
 	       (item-returned-on b) "}"))
-    
+
+(defun subseq-img (b)
+  (if (null b)
+      ""
+      (subseq (item-picture b)
+	      (+ (search "webimg" (item-picture b)) 7))))
+
+
+;;;I know this is ugly as sin.  I'm tired
+;;;I'll fix it in a little bit.
+
+(defun format-picture (b)
+  (concatenate 'string picrow
+	       (if (null (first b))
+		   ""
+		   (item-description (first b)))
+	       "}"
+	       "{"(subseq-img (first b)) "}{"
+	       (if (null (second b))
+		   ""
+		   (item-description  (second b)))
+	       "}{"
+	       (subseq-img (second b)) "}{"
+	       (if (null (third b))
+		   ""
+		   (item-description  (third b)))
+	       "}{"
+	       (subseq-img (third b)) "}"))
+
+(defun picture-list (b)
+  (cond
+    ((null b) nil)
+    (t
+      (cons (list (car b) (cadr b) (third b)) (picture-list (cdddr b))))))
 ;;;Alot of the latex code was ported from the racket version and has already been tested alot
 ;;;Shouldn't need to mess with this at all unless I'm adding note taking abilities
 ;;;--------------------------------------------------------------------
