@@ -344,11 +344,12 @@
 	        ,@navbar		   	       
 		(:div :class "container"
 		      (:div :class "section"
-			    ,@body)))
-	    (:footer :class "page-footer red darken-4"
+			    ,@body
+	    (:footer :class "page-footer"
 		     (:div :class "container"
 			   (:div :class "row"
-				 (:h5 :class "center white-text" "Made with Powerful Parenthesis")))))))
+		        
+				 (:h5 :class "center white-text" "Made with Powerful Parenthesis"))))))))))
 	   
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
@@ -377,21 +378,24 @@
 		 (:input :type "text"
 			 :class "form-control"
 			 :name "username"
-			 :id "username")
+			 :id "username"
+			 :required "required")
 		 (:label :class "white-text" :for "username" "Username"))
 
 		 (:div :class "input-field col s6"
 		 (:input :type "password"
 			 :name "password"
 			 :class "form-control"
-			 :id "password")
+			 :id "password"
+			 :required "required")
 		 (:label :class "white-text" :for "password" "Password"))
 
 		 (:div :class "input-field col s6"
 		 (:input :type "password"
 			 :class "form-control"
 			 :name "password-repeat"
-			 :id "password-repeat")
+			 :id "password-repeat"
+			 :required "required")
 		 (:label :class "white-text" :for "password-repeat" "Repeat"))
 	        
 		 (:div :class "center"
@@ -412,7 +416,8 @@
 		       (:input :type "text"
 			       :class "form-control"
 			       :name "username"
-			       :id "username")
+			       :id "username"
+			       :required "required")
 		       (:label :class "white-text" :for "username" "Username"))
 		 
 		 (:div :class "input-field col s12"
@@ -420,7 +425,8 @@
 		       (:input :type "password"
 			       :class "form-control"
 			       :name "password"
-			       :id "password")
+			       :id "password"
+			       :required "required")
 		       (:label :class "white-text" :for "password" "Password"))
 	        (:div :class "center"
 	         (:button :type "submit"
@@ -519,22 +525,27 @@
 			    
 			      (:input :type "text" 
 				      :id "input-item-description"
-				      :name "input-item-description"))
+				      :name "input-item-description"
+				      :required "required"))
 			(:div :class "input-field col s12 l6 m6"
 			    
 			      (:label :for "inputPrice" :class "black-text"  "Price")
 			      (:input :type "text" 
 				      :id "input-item-price"
-				      :name "input-item-price"))
+				      :name "input-item-price"
+				      :required "required"))
 			(:div :class "input-field col s12 m6 l6"
 			     
 			      (:label :for "inputQty" :class "black-text" "Quantity")
 			      (:input :type "text" 
 				      :id "input-item-qty"
-				      :name "input-item-qty"))
+				      :name "input-item-qty"
+				      :required "required"))
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
 			(:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
+			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
+				 "Rotate")
 			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 				 :data-target "myModal" "Switch")))))))
 	 
@@ -549,7 +560,7 @@
 				        
 		 (dolist (img ,full-images)
 		   (htm
-		    (:div :class "col s12 m6 l6"
+		    (:div :class "col s12 m3 l3"
 		    (:form :action "/swapitemposition"
 			   :method "POST"
 			   (:input :type "hidden" :id "image-name"
@@ -599,47 +610,52 @@
 			(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string (invoice-contact-name invoice))))
 			(:div :class "card-action"
 			      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
-				  :class "chip blue-grey" "Check-in")
+				  :class "btn-flat waves-effect red-text  text-darken-4" "Check-in")
 			      (:a :href (format nil "pre-set-cookies?showname=~a&setname=~a" (web-safep (show-name invoice)) (web-safep (invoice-set-name invoice)))
-				  :class "chip blue-grey" "Invoice"))))))))))
+				  :class "btn-flat waves-effect red-text text-darken-4" "Invoice"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
    (:div :class "row"
-	  (:div :class "input-field col s12 l6 m6"
+	  (:div :class "input-field col s12 l4 m4"
 	    (:label :for "myInput" :class "black-text" "Search")
 	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
 	  (:script :src "plugins/search.js")
 	  (:div :id "itemlist"
 	   (:ul :id "myUL"
-		  (dolist (item (invoice-item-list ,invoice))
-		    (htm
-		     (:li
-		     (:div :class "col s12 m6 l6"
-			   (:div :class "card blue-grey"
-				 (:div :class "card-image"
-				       (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
-				       (:span :class "black card-title" (fmt "~A" (escape-string (item-description item)))))
-				 (:div :class "card-content"
-		      (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
-		      (:div :class "chip black-text" (fmt "Quantity: ~A" (escape-string (item-quantity item)))))
-				 (:div :class "card-action"
-		      (:form :class "form-inline"
-			     :action "/removeitem"
-			     :method "POST"
-			     :id "item-table"
-			     (:input :type "hidden" :value (item-description item)
-				     :name "item" :id "item")
-			     (:input :type "hidden" :value (item-price item)
-				     :name "item-price" :id "item-price")
-			     (:input :type "hidden" :value (item-quantity item)
-				     :name "item-quantity" :id "item-quantity")
-			     (:input :type "hidden" :value ,invoice
-				     :name "invoice" :id "invoice")
-			     (if (string= (item-returned-on item) "")
-				 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
-				 (htm (:button :type "submit" :class "btn btn-sm btn-danger disabled" :disabled "true"
-					       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))))))))))))))
+		(dolist (item (invoice-item-list ,invoice))
+		  (htm
+		   (:li
+		    (:div :class "col s12 m4 l4"
+			  (:div :class "card blue-grey"
+				(:div :class "card-image"
+				      (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
+				      (:span :class "card-title truncate"
+					    :style "font-size:20px; text-shadow:-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;" ;;;Set correct fontsize and give a blackoutline to help readability
+					    (fmt "~A" (escape-string (item-description item)))))
+				(:div :class "card-content"
+				      
+				      (:span
+				       
+				       (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (item-price item)))
+				       (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (item-quantity item)))))
+				(:div :class "card-action"
+				      (:form :class "form-inline"
+					     :action "/removeitem"
+					     :method "POST"
+					     :id "item-table"
+					     (:input :type "hidden" :value (item-description item)
+						     :name "item" :id "item")
+					     (:input :type "hidden" :value (item-price item)
+						     :name "item-price" :id "item-price")
+					     (:input :type "hidden" :value (item-quantity item)
+						     :name "item-quantity" :id "item-quantity")
+					     (:input :type "hidden" :value ,invoice
+						     :name "invoice" :id "invoice")
+					     (if (string= (item-returned-on item) "")
+						 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
+						 (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
+							       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))))))))))))))
 ;;;Force remove option may be necessary due to this
 
 	  
@@ -648,23 +664,26 @@
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "row"
-	   (:div :class "input-field col s12 l6 m6"
+	   (:div :class "input-field col s12 l4 m4"
 		 (:label :for "myInput" :class "black-text" "Search")
 	   (:input :type "text" :id "myInput" :class "black-text" :onkeyup "myFunction()"))
 	   (:ul :id "myUL"
 			  (dolist (item (remove-returned (invoice-item-list ,invoice)))
 			    (htm
 			     (:li
-			     (:div :class "col s12 m6 l6"
+			     (:div :class "col s12 m4 l4"
 				   (:div :class "card blue-grey"
 					 (:div :class "card-image"
 					       (:img :src (item-picture item) :class "materialboxed responsive-img")
-					       (:span :class "card-title black" (fmt "~A" (escape-string (item-description item)))))
-					 (:div :class "card-content"
+					       (:span :class "card-title truncate"
+					    :style "font-size:20px; text-shadow:-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;" ;;;Set correct fontsize and give a blackoutline to help readability
+					    (fmt "~A" (escape-string (item-description item)))))
 					       
-			    
-					       (:div :class "chip black-text" (fmt "Price: ~A" (escape-string (item-price item))))
-					       (:div :class "chip black-text"  (fmt "Quantity: ~A" (escape-string (item-quantity item))))
+					 (:div :class "card-content"
+					      (:span 
+			    	       (:i :class "material-icons" "attach_money") (fmt "~A &emsp;" (escape-string (item-price item)))
+				       (:i :class "material-icons" "all_inclusive") (fmt " ~A &emsp;" (escape-string (item-quantity item)))))
+				        				        
 			      (:div :class "card-action"
 			       (:form 
 					  :action "/check-in-item"
@@ -678,7 +697,8 @@
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
 					  (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check in"))))))))))
-			  (:script :src "plugins/search.js"))))
+     
+			  (:script :src "plugins/search.js")))
         
 		 
 		 
