@@ -544,8 +544,19 @@
 			(:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 	        
 			(:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
-			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
-				 "Rotate")
+			(:a  :class "red  dropdown-button darken-4 btn waves-effect waves-light"
+			     
+			     :href "#"
+			     :data-activates "dropdown1"
+			     :data-beloworigin "true"
+			     "Rotate")
+			(:ul :id "dropdown1" :class "dropdown-content"
+			     (:li (:a :href (format nil "rotate-image?direction=~a&image=~a"
+						    "left" ,image)
+						    :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
+			     (:li (:a :href (format nil "rotate-image?direction=~a&image=~a"
+						    "right" ,image)
+				      :class "red-text" (:i :class "material-icons" "rotate_right") "Rotate Right")))
 			(:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 				 :data-target "myModal" "Switch")))))))
 	 
@@ -638,7 +649,7 @@
 				      (:span
 				       
 				       (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (item-price item)))
-				       (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (item-quantity item)))))
+				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (item-quantity item))))))
 				(:div :class "card-action"
 				      (:form :class "form-inline"
 					     :action "/removeitem"
@@ -681,10 +692,11 @@
 					       
 					 (:div :class "card-content"
 					      (:span 
-			    	       (:i :class "material-icons" "attach_money") (fmt "~A &emsp;" (escape-string (item-price item)))
-				       (:i :class "material-icons" "all_inclusive") (fmt " ~A &emsp;" (escape-string (item-quantity item)))))
+					       (:i :class "material-icons" "attach_money") (fmt "~A" (escape-string (item-price item)))					    
+				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A &emsp;" (escape-string (item-quantity item))))))
 				        				        
-			      (:div :class "card-action"
+					 (:div :class "card-action"
+					       
 			       (:form 
 					  :action "/check-in-item"
 					  :method "POST"
@@ -696,7 +708,13 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Check in"))))))))))
+					  (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))
+			       
+			       (:a :class "right red darken-4 btn-floating activator" (:i :class "material-icons" "arrow_upward"))))
+			   
+			      (:div :class "card-reveal"
+				    (:span :class "card-title grey-text text-darken-4"
+					   "Hello World" (:i :class "material-icons right" "close"))))))))))
      
 			  (:script :src "plugins/search.js")))
         
@@ -1043,12 +1061,12 @@
 (defparameter begin-table "\\begin{invoiceTable}")
 (defparameter end-table "\\end{invoiceTable}")
 (defparameter unitrow "\\unitrow{")
-(defparameter begin-img-table "\\begin{pictureTable}")
-(defparameter end-img-table "\\end{pictureTable}")
-(defparameter end-document "\\end{document}")
+(defparameter begin-img-table "\\figureSeriesFloat{}{")
+(defparameter end-img-table "}")
+(defparameter end-document " \\end{document}")
 (defparameter begin-document "\\begin{document}")
 
-(defparameter picrow "\\picrow{")
+
 ;;;Takes an invoice and root-dir
 
 (defparameter tail-conf "
@@ -1057,7 +1075,7 @@
 
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
-\\newpage  ")
+  ")
 
 
 (defparameter document-conf "\\documentclass{invoice} % Use the custom invoice class (invoice.cls)
@@ -1068,7 +1086,6 @@
 \\usepackage{courier}
 \\usepackage{setspace}
 \\usepackage{graphicx}
-\\usepackage{subfig}
 \\usepackage{pgffor}
 \\usepackage{caption}
 \\usepackage{expl3}
@@ -1138,6 +1155,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       (princ tail-conf s)
       (princ begin-img-table s)
       (mapc (lambda (b) (princ (format-picture b) s)
+		    (fresh-line s)
 		    (fresh-line s))
 	    (picture-list (invoice-item-list invoice)))
       (princ end-img-table s)
@@ -1170,22 +1188,21 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 ;;;I'll fix it in a little bit.
 
 (defun format-picture (b)
-  (concatenate 'string picrow
-	       (if (null (first b))
-		   ""
-		   (item-description (first b)))
-	       "}"
-	       "{"(subseq-img (first b)) "}{"
-	       (if (null (second b))
-		   ""
-		   (item-description  (second b)))
-	       "}{"
-	       (subseq-img (second b)) "}{"
-	       (if (null (third b))
-		   ""
-		   (item-description  (third b)))
-	       "}{"
-	       (subseq-img (third b)) "}"))
+  (concatenate 'string
+	       "\\figureSeriesRow{ "
+	       (picrow-format (first b))
+	       (picrow-format (second b))
+	       (picrow-format (third b))
+	       "}"))
+
+(defun picrow-format (a)
+  (if (null a)
+      ""
+      (concatenate 'string "\\figureSeriesElement{"
+		   (item-description a)
+		   "}{\\resizebox{0.3\\linewidth}{5cm}{\\includegraphics{"
+		   (subseq-img a)
+		   "}}}")))
 
 (defun picture-list (b)
   (cond
