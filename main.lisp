@@ -638,7 +638,7 @@
 		  (htm
 		   (:li
 		    (:div :class "col s12 m4 l4"
-			  (:div :class "card blue-grey"
+			  (:div :class "card medium blue-grey"
 				(:div :class "card-image"
 				      (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
 				      (:span :class "card-title truncate"
@@ -683,7 +683,7 @@
 			    (htm
 			     (:li
 			     (:div :class "col s12 m4 l4"
-				   (:div :class "card blue-grey"
+				   (:div :class "card medium blue-grey"
 					 (:div :class "card-image"
 					       (:img :src (item-picture item) :class "materialboxed responsive-img")
 					       (:span :class "card-title truncate"
@@ -1050,6 +1050,20 @@
   (standard-page (:title "Login")
    (standard-login)))
 
+(define-easy-handler (rotate-image :uri "/rotate-image") (direction image)
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (rotation (/ PI 2))
+	 (root-dir (invoice-root-dir invoice))
+	 (image-name (subseq-img-path image)))
+    (opticl:write-image-file
+     (format nil (concatenate 'string root-dir "webimg/" image-name) rotation)
+     (transform-image (read-jpeg-file (make-pathname :directory (concatenate 'string root-dir "webimg/")
+						     :name image-name))
+		      (reduce #'opticl:matrix-multiply
+			      (list (make-affine-transformation :theta rotation)))
+		      :transform-bounds t)))
+   
+  (redirect "/setthemcookies"))
 
 ;;;Latex constants---------------------------------------------------
 
@@ -1183,7 +1197,11 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       (subseq (item-picture b)
 	      (+ (search "webimg" (item-picture b)) 7))))
 
-
+(defun subseq-img-path (b)
+  (if (null b)
+      ""
+      (subseq b
+	      (+ (search "webimg" b) 7))))
 ;;;I know this is ugly as sin.  I'm tired
 ;;;I'll fix it in a little bit.
 
