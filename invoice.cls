@@ -10,7 +10,8 @@
 \usepackage{calc} % Counters for totaling hours and cost
 \usepackage{longtable}
 \usepackage[table]{xcolor}
-\usepackage{subfig}
+\usepackage{figureSeries}
+
 % Define color of grey lines
 \definecolor{lightgray}{gray}{0.9}
 
@@ -45,24 +46,6 @@
 %------------------------------------
 % Generate Table of Images
 %------------------------------------
-
-
-\newenvironment{pictureTable}{
-  \newcommand*{\picrow}[6]{
-    \subfloat[##1]{\includegraphics[width=2.3in]{##2}} &
-    \subfloat[##3]{\includegraphics[width=2.3in]{##4}} &
-    \subfloat[##5]{\includegraphics[width=2.3in]{##6}} \\
-  }
-  
-  \begin {figure}
-    \renewcommand*\thesubfigure{\arabic{subfigure}}
-  \begin{tabular}{ccc}
-    
-}{ 
-  \end{tabular}
-  \end{figure}
-  
-}
 
 %-----------------------------------
 % Create an invoice table
