@@ -7,4 +7,5 @@ RILEY is licensed under rileyMIT.  By using this software you pledge undying loy
 TO USE:
 
 Add figureSeries to ~/texmf
+
 Export multiply-matrix in opticl/transform.lisp
