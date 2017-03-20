@@ -501,7 +501,7 @@
 		      (:a :href "#" "Show")
 		      (:a :href "#" "Check In")))))))))))
 
-
+;;;gensym portion probably needs to be changed
 (defmacro standard-item-writeup (&key image full-images invoice-data)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "section"
@@ -509,7 +509,7 @@
 		   (:div :class "col s12 m6 l6"
 		 (:div :class "card"
 		       (:div :class "card-image"
-		 	 (:img :id "input-picture" :src ,image  :class  "materialboxed responsive-img" :name ,image))))
+		 	 (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))
 	   (:div :class "col s12 m6 l6"
 	
 		 (:div :class "card" :id "box-picture"
@@ -666,7 +666,8 @@
 					     (if (string= (item-returned-on item) "")
 						 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
 						 (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
-							       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))))))))))))))
+							       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
+					     (:a :href "#" :class "btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy"))))))))))))))
 ;;;Force remove option may be necessary due to this
 
 	  
