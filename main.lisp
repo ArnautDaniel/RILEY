@@ -82,6 +82,10 @@
    (shows-on :initarg :shows-on
 	     :accessor item-shows-on
 	     :initform '())
+   (returned-qty :initarg :returned-qty
+		 :accessor item-returned-qty)
+   (notes :initarg :notes
+	  :accessor item-notes)
    (returned-on :initarg :returned-on
 		:accessor item-returned-on)))
 
@@ -712,13 +716,19 @@
 						  :value (item-description item))
 					  (:input :type "hidden" :name "item-qty" :id "item-qty"
 						  :value (item-quantity item))
-					  (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))
-			       
+					  (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))			        
 			       (:a :class "right red darken-4 btn-floating activator" (:i :class "material-icons" "arrow_upward"))))
 			   
 			      (:div :class "card-reveal"
 				    (:span :class "card-title grey-text text-darken-4"
-					   "Hello World" (:i :class "material-icons right" "close"))))))))))
+					   "Check in specific qty" (:i :class "material-icons right" "close"))
+				    (:form :action (concatenate 'string "/partial-check-in?qty=" (item-quantity item) "&desc=" (item-description item) "&price=" (item-price item))
+					   :method "POST"
+					   (:p :class "range-field"
+					       (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (item-quantity item) :oninput "this.form.rangedName.value=this.value"))
+					       (:input :class "left" :type "number" :name "rangedName" :min "0" :max (item-quantity item) :value (item-quantity item) :oninput "this.form.ranged.value=this.value")
+					       
+					   (:button :type "submit"  :class "right red darken-4 btn-floating" (:i :class "material-icons" "arrow_downward")))))))))))
      
 			  (:script :src "plugins/search.js")))
         
@@ -910,6 +920,16 @@
 						     (invoice-item-list invoice))))
   (redirect "/setthemcookies")))
 
+(define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
+  (let* ((rtn (hunchentoot:post-parameter "ranged"))
+	 (invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (item-r (first (remove-if-not #'(lambda (x)
+				(and (string= desc (item-description x))
+				     (string= price (item-price x))
+				     (string= qty (item-quantity x)))) (invoice-item-list invoice)))))
+    
+				
+    (setf (item-returned-qty item-r) (+ (item-returned-qty item-r) rtn))))
 ;;;Standard check in page that displays a table of shows with invoices
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
@@ -1244,10 +1264,8 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
   price quantity description invoices-on picture shows-on returned-on)
   
 (defun save-data ()
-  (let* ((saved-list (mapcar #'lambda (x)
-			     (mapcar #'lambda (y)
-				     (conspack:encode-object (invoice-item-list y)))
-			     *GLOBAL-INVOICE-LIST*)))
+  (let* ((saved-list (mapcar #'conspack:encode-object (invoice-item-list (car *GLOBAL-INVOICE-LIST*)))))
+			    
         
     (with-open-file (out "caps.db"
 			 :direction :output
