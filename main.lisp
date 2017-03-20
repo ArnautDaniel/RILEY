@@ -43,7 +43,8 @@
    (contact-name :initarg :contact-name
 		 :accessor invoice-contact-name)
    (check-in-accounting :initarg :check-in-accounting
-			:accessor invoice-check-in-accounting)
+			:accessor invoice-check-in-accounting
+			:initform '())
    (item-list :initarg :itemlist
 	      :accessor invoice-item-list)
    (root-dir :initarg :root-dir
@@ -74,11 +75,13 @@
    (description :initarg :description
 		:accessor item-description)
    (invoices-on :initarg :invoices-on
-		:accessor item-invoices-on)
+		:accessor item-invoices-on
+		:initform '())
    (picture    :initarg :pictures
 		:accessor item-picture)
    (shows-on :initarg :shows-on
-	     :accessor item-shows-on)
+	     :accessor item-shows-on
+	     :initform '())
    (returned-on :initarg :returned-on
 		:accessor item-returned-on)))
 
@@ -1228,3 +1231,34 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
     ((null b) nil)
     (t
       (cons (list (car b) (cadr b) (third b)) (picture-list (cdddr b))))))
+
+;;; End of Latex Section
+
+;;;Saving and Loading Data
+
+(conspack:defencoding invoice
+  id-num set-name date-out show-name contact-name
+  check-in-accounting item-list finalized pdf-location)
+
+(conspack:defencoding item
+  price quantity description invoices-on picture shows-on returned-on)
+  
+(defun save-data ()
+  (let* ((saved-list (mapcar #'lambda (x)
+			     (mapcar #'lambda (y)
+				     (conspack:encode-object (invoice-item-list y)))
+			     *GLOBAL-INVOICE-LIST*)))
+        
+    (with-open-file (out "caps.db"
+			 :direction :output
+			 :if-exists :supersede)
+      (with-standard-io-syntax
+	(print saved-list out)))))
+
+(defun load-data ()
+  (let ((input-invoice (with-open-file (in "caps.db")
+			 (with-standard-io-syntax
+			   (read in)))))
+    (setf *GLOBAL-INVOICE-LIST* (mapcar #'(lambda (x)
+					    (conspack:decode-object 'invoice x))
+					input-invoice))))
