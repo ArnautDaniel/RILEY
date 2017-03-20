@@ -537,14 +537,14 @@
 			(:div :class "input-field col s12 l6 m6"
 			    
 			      (:label :for "inputPrice" :class "black-text"  "Price")
-			      (:input :type "text" 
+			      (:input :type "number" 
 				      :id "input-item-price"
 				      :name "input-item-price"
 				      :required "required"))
 			(:div :class "input-field col s12 m6 l6"
 			     
 			      (:label :for "inputQty" :class "black-text" "Quantity")
-			      (:input :type "text" 
+			      (:input :type "number" 
 				      :id "input-item-qty"
 				      :name "input-item-qty"
 				      :required "required"))
@@ -634,7 +634,8 @@
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
-   (:div :class "row"
+     (:div :class "row"
+	   (:script :src "plugins/scrollfire.js")
 	  (:div :class "input-field col s12 l4 m4"
 	    (:label :for "myInput" :class "black-text" "Search")
 	   (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
@@ -647,7 +648,7 @@
 		    (:div :class "col s12 m4 l4"
 			  (:div :class "card medium blue-grey"
 				(:div :class "card-image"
-				      (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img")
+				      (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img" :data-caption (item-description item))
 				      (:span :class "card-title truncate"
 					    :style "font-size:20px; text-shadow:-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;" ;;;Set correct fontsize and give a blackoutline to help readability
 					    (fmt "~A" (escape-string (item-description item)))))
@@ -693,7 +694,7 @@
 			     (:div :class "col s12 m4 l4"
 				   (:div :class "card medium blue-grey"
 					 (:div :class "card-image"
-					       (:img :src (item-picture item) :class "materialboxed responsive-img")
+					       (:img :src (item-picture item) :class "materialboxed responsive-img" :data-caption (item-description item))
 					       (:span :class "card-title truncate"
 					    :style "font-size:20px; text-shadow:-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;" ;;;Set correct fontsize and give a blackoutline to help readability
 					    (fmt "~A" (escape-string (item-description item)))))
@@ -721,7 +722,7 @@
 			   
 			      (:div :class "card-reveal"
 				    (:span :class "card-title grey-text text-darken-4"
-					   "Check in specific qty" (:i :class "material-icons right" "close"))
+					   (fmt "~A" (escape-string (item-description item))) (:i :class "material-icons right" "close"))
 				    (:form :action (concatenate 'string "/partial-check-in?qty=" (item-quantity item) "&desc=" (item-description item) "&price=" (item-price item))
 					   :method "POST"
 					   (:p :class "range-field"
@@ -730,7 +731,8 @@
 					       
 					   (:button :type "submit"  :class "right red darken-4 btn-floating" (:i :class "material-icons" "arrow_downward")))))))))))
      
-			  (:script :src "plugins/search.js")))
+     (:script :src "plugins/search.js")
+     (:script :src "plugins/scrollfire.js")))
         
 		 
 		 
@@ -921,16 +923,17 @@
   (redirect "/setthemcookies")))
 
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
-  (let* ((rtn (hunchentoot:post-parameter "ranged"))
+  (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
 	 (invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item-r (first (remove-if-not #'(lambda (x)
-				(and (string= desc (item-description x))
-				     (string= price (item-price x))
-				     (string= qty (item-quantity x)))) (invoice-item-list invoice)))))
+					   (and (string= desc (item-description x))
+						(string= price (item-price x))
+						(string= qty (item-quantity x)))) (invoice-item-list invoice)))))
     
-				
-    (setf (item-returned-qty item-r) (+ (item-returned-qty item-r) rtn))))
+    (setf (item-returned-qty item-r) rtn))
+  (redirect "/check-in-set"))
 ;;;Standard check in page that displays a table of shows with invoices
+
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
     (:navbar (test-navbar))
