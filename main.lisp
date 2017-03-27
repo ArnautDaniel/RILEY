@@ -515,8 +515,11 @@
 	   (:div :class "row blue-grey"
 		 (:div :class "col s12 m6 l6"
 		       (:div :class "card"
-			     (:div :class "card-image"
-				   (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))
+			    
+				   (if (null ,image)
+				       (htm (:div :class "card-title" (:p :class "center" "No pictures available")))
+				       (htm  (:div :class "card-image"
+						   (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))))
 		 (:div :class "col s12 m6 l6"
 		       
 		       (:div :class "card" :id "box-picture"
@@ -928,10 +931,12 @@
 	 (item-r (first (remove-if-not #'(lambda (x)
 					   (and (string= desc (item-description x))
 						(string= price (item-price x))
-						(string= qty (item-quantity x)))) (invoice-item-list invoice)))))
+						(string= qty (item-quantity x))))
+				       (invoice-item-list invoice)))))
     
     (setf (item-returned-qty item-r) rtn))
   (redirect "/check-in-set"))
+
 ;;;Standard check in page that displays a table of shows with invoices
 
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
@@ -954,8 +959,9 @@
       (standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
 				 :set (fmt "~A" (escape-string setname))
 				 :contact (fmt "~A" (escape-string (invoice-contact-name invoice)))
-				 :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-													 "-" setname)))))
+				 :pic-num (fmt "~A" (escape-string (count-pics-from-invoice
+								    (concatenate 'string showname
+										 "-" setname)))))
       (standard-check-in :invoice invoice))))
 
 
@@ -982,8 +988,10 @@
 	 (setname (invoice-set-name invoice))
 	 (contact (invoice-contact-name invoice))
 	 (change-pic-cookie (cookie-in "current-picture"))
-	 (images (prepare-for-table (cl-fad:list-directory (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
-	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice) change-pic-cookie)))
+	 (images (prepare-for-table (cl-fad:list-directory
+				     (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
+	 (images-filtered (sort-item-list (filter-already-in-itemlist images invoice)
+					  change-pic-cookie)))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
       (:navbar (test-navbar))
@@ -1017,7 +1025,7 @@
 (defun prepare-for-table (fad-list)
   (mapcar #'(lambda (x)
 	      (let ((string-path-image (namestring x)))
-		(subseq (namestring string-path-image) 68)))
+		(subseq (namestring string-path-image) 53)))
 	  (remove-if #'(lambda (x)
 			 (cl-fad:directory-exists-p x))
 		     fad-list)))

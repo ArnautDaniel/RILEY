@@ -1,0 +1,55 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+
+
+IDEA (Checking in less than an item's total quantity)
+
+Quantity expresses the unchanging total quantity originally input.  This value should never change.
+
+Returned-Qty expresses a LIST of PAIRS
+
+((2 "4/2") (3 "3/4")) for instance in which the CAR of the list is the number returned and the CDR of the list is the date returned on.
+
+This can be used later to generate NOTES
+
+"2 RTN'D on 4/2" is a possible note for the latex.
+
+Problems:
+
+-Returning data-type from POST parameter does not play well with the CLOS Slot value.
+-Will need a method to compute the total value from the RETURNED-QTY list (The one above is 5)
+-Will need to take this value and compare it against the QUANTITY value.
+-Will need a method that can be called to perform this:
+
+  Compute the quantity left over and send to maximum value of the HTML slider on the check-in page.
+  If the quantity = returned-qty then check the item in by setting the returned-on date
+
+
+Other Problems:
+
+Setup the HTML button for the form to submit.
+Figure out a way for js to unreveal the card and grey it out
+The toast should pop up with the number gained from the range slider
+Modifications to latex text to support NOTES
+
+---
+
+IDEA (Multiple pictures per item)
+
+A Let over Lambda form encapsulating gensym's containing the value of a function that searches the item-list in that lexical context?  Hell yeah.
+
+Since literally every single variable in a single item is the exact same as a secondary picture the only real necessity is to focus on the PICTURE variable.  That'll probably have to be turned into a list and all functions using it modified.  The result of poor planning.
+
+As far as the website goes that blue icon will open up the bottom modal, which will have to be a seperate version from the SWITCH modal allowing multiple choice of pictures and a submission FAB.  Send to a function that takes a list of images, sends then through the standard uploader but also pushes their location onto the picture variable of the selected item.
+
+In actuality it's just making the data a tree instead of a linear structure.
+
+
+Problem:
+
+Several functions that operate without a list in mind need to be upgraded
+Multiple picture modal without making MULTIPLE modals
+Rotation of images
+Carousel in the image card for that item (easy)
+Shows-on and invoices-on needs to be finished for ITEMS
