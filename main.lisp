@@ -162,7 +162,8 @@
 		       :contact-name (show-contact-name show-obj)
 		       :phone-number (show-phone-number show-obj)
 		       :order-amount (show-order-amount show-obj)
-		       :list-of-invoices (list-of-invoices show-obj))  *current-show-list* ))
+		       :list-of-invoices (list-of-invoices show-obj))
+	*current-show-list* ))
 
 ;;;Search *USERS* for USERNAME
 (defun find-user (username)
@@ -208,19 +209,19 @@
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
 
-
 (defun string-web-safe (stg)
   (let* ((poz (position #\' stg))
 	 (sanitized-first (subseq stg 0 poz))
 	 (sanitized-last (subseq stg (+ poz 1))))
     (web-safep (concatenate 'string sanitized-first "&#39;" sanitized-last))))
 
-
+;;;Recursively remove ' from HTML to prevent escaping
 (defun web-safep (stg)
   (if (position #\' stg)
       (string-web-safe stg)
       stg))
 
+;;;Remove harmful characters to directory searching
 (defun directory-safe (stg)
   (remove-if #'(lambda (x)
 		 (or (char= x #\ )
@@ -274,7 +275,8 @@
 		       :contact-name contact-name
 		       :itemlist '()
 		       :root-dir root-dir
-		       :pdf-location pdf-location) *global-invoice-list*))
+		       :pdf-location pdf-location)
+	*global-invoice-list*))
 
 ;;;USED ALOT.  Lets you find an invoice on the global invoice list
 ;;;from the *showname*-*setname* form of a cookie string.
@@ -306,9 +308,7 @@
 				      (show-name current-invoice)
 				      "-"
 				      (write-to-string (invoice-id-num current-invoice))
-				      ".jpg")))
-
-      
+				      ".jpg")))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
 			(make-pathname :directory (concatenate 'string invoice-location "webimg/")
@@ -515,11 +515,11 @@
 	   (:div :class "row blue-grey"
 		 (:div :class "col s12 m6 l6"
 		       (:div :class "card"
-			    
-				   (if (null ,image)
-				       (htm (:div :class "card-title" (:p :class "center" "No pictures available")))
-				       (htm  (:div :class "card-image"
-						   (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))))
+			     
+			     (if (null ,image)
+				 (htm (:div :class "card-title" (:p :class "center" "No pictures available")))
+				 (htm  (:div :class "card-image"
+					     (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))))
 		 (:div :class "col s12 m6 l6"
 		       
 		       (:div :class "card" :id "box-picture"
@@ -735,7 +735,7 @@
 					     (:button :type "submit"  :class "right red darken-4 btn-floating" (:i :class "material-icons" "arrow_downward")))))))))))
      
      (:script :src "plugins/search.js")
-     (:script :src "plugins/scrollfire.js")))
+     (:script :src "plugins/scrollfire.js"))) 
 
 
 
@@ -861,7 +861,8 @@
 	 (item (first (remove-if-not #'(lambda (x)
 					 (and (string= (item-description x) item-desc)
 					      (string= (item-price x) item-price)
-					      (string= (item-quantity x) item-qty))) (invoice-item-list invoice)))))
+					      (string= (item-quantity x) item-qty)))
+				     (invoice-item-list invoice)))))
 
     
     (multiple-value-bind
@@ -1080,7 +1081,6 @@
 	     (redirect "/login"))
 	(redirect "/badpassword"))))
 
-
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
     (standard-login)))
@@ -1097,7 +1097,6 @@
 		      (reduce #'opticl:matrix-multiply
 			      (list (make-affine-transformation :theta rotation)))
 		      :transform-bounds t)))
-  
   (redirect "/setthemcookies"))
 
 ;;;Latex constants---------------------------------------------------
@@ -1114,10 +1113,7 @@
 (defparameter end-img-table "}")
 (defparameter end-document " \\end{document}")
 (defparameter begin-document "\\begin{document}")
-
-
 ;;;Takes an invoice and root-dir
-
 (defparameter tail-conf "
 \\par
 {\\scriptsize \\begin{singlespace} It is agreed that \\textsc{Lessee} assumes all liability and responsibility for the item(s) listed above.  When item(s) have been accepted by \\textsc{Lessee} (as evidenced by \\textsc{Lessee’s} signature below), and while in the custody and possession of \\textsc{Lessee}, its employees, agents, owners, directors and officers and any other person or entity to whom the item(s) is entrusted by \\textsc{Lessee}, or assigns.  Liability extends to the full replacement cost or repair, in Lessor’s sole discretion.  Further, Lessee assumes full responsibility for any liability arising because of the use of the item(s) during the term of the lease and until item(s) is returned to the custody and control of Lessor (as evidenced by the written acknowledgement by Lessor). Further, to the extent permitted by law, the \\textsc{Lessee} agrees to protect, indemnify, defend and hold harmless Lessor, its directors, officers, agents, shareholders, and employees, against all claims or damages to people or property and costs (including reasonable attorney’s fees), up to Lessor’s pro-rata share of the item(s), arising out of or connected with the operation of \\textsc{Lessee’s} activities with respect to the item(s), including damage caused by inadequate maintenance of the item(s), use of the item(s), or a part thereof, by any customer, any guest, invitee, or by any agent of the \\textsc{Lessee}. Replacement value of all items (unless otherwise noted) equals (10X) first week rate. \\end{singlespace}}
@@ -1125,7 +1121,6 @@
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
   ")
-
 
 (defparameter document-conf "\\documentclass{invoice} % Use the custom invoice class (invoice.cls)
 
@@ -1139,7 +1134,6 @@
 \\usepackage{caption}
 \\usepackage{expl3}
 ")
-
 
 (defparameter heading-conf "
 \\hfil{\\huge\\color{red}{\\textsc{Checkout Sheet}}}\\hfil
