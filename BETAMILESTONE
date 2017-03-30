@@ -21,8 +21,8 @@ Problems:
 -Will need to take this value and compare it against the QUANTITY value.
 -Will need a method that can be called to perform this:
 
-  Compute the quantity left over and send to maximum value of the HTML slider on the check-in page.
-  If the quantity = returned-qty then check the item in by setting the returned-on date
+Compute the quantity left over and send to maximum value of the HTML slider on the check-in page.
+If the quantity = returned-qty then check the item in by setting the returned-on date
 
 Other Problems:
 Setup the HTML button for the form to submit.

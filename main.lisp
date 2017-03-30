@@ -892,7 +892,6 @@
 ;;;May need to start putting data in the URI but the function works pretty decently already.
 (define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") (showname setname)
   (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
-  
   (redirect "/setthemcookies"))
 
 ;;;Adds an item from the additem panel on the write order page
@@ -1037,8 +1036,7 @@
       "0"
       (let* ((invoice (find-invoice-from-cookie inv))
 	     (invoice-pathname (invoice-root-dir invoice)))
-	(concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname)))
-		     " pictures on order"))))
+	(concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname))) " pictures on order"))))
 
 (defun filtered-length (directory-list)
   (length (remove-if #'(lambda (x)
