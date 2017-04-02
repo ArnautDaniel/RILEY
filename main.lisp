@@ -705,7 +705,9 @@
 				(:div :class "card-content"
 				      (:span 
 				       (:i :class "material-icons" "attach_money") (fmt "~A" (escape-string (item-price item)))					    
-				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A &emsp;" (escape-string (item-quantity item))))))
+				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A/~A &emsp;"
+																 (escape-string (item-returned-qty item))
+																 (escape-string (item-quantity item))))))
 				
 				(:div :class "card-action"
 				      
@@ -729,8 +731,8 @@
 				      (:form :action (concatenate 'string "/partial-check-in?qty=" (item-quantity item) "&desc=" (item-description item) "&price=" (item-price item))
 					     :method "POST"
 					     (:p :class "range-field"
-						 (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (item-quantity item) :oninput "this.form.rangedName.value=this.value"))
-					     (:input :class "left" :type "number" :name "rangedName" :min "0" :max (item-quantity item) :value (item-quantity item) :oninput "this.form.ranged.value=this.value")
+						 (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (web-math-subtract (item-quantity item) (item-returned-qty item)) :oninput "this.form.rangedName.value=this.value"))
+					     (:input :class "left" :type "number" :name "rangedName" :min "0" :max (web-math-subtract (item-quantity item) (item-returned-qty item)):value (web-math-subtract (item-quantity item) (item-returned-qty item)) :oninput "this.form.ranged.value=this.value")
 					     
 					     (:button :type "submit"  :class "right red darken-4 btn-floating" (:i :class "material-icons" "arrow_downward")))))))))))
      
@@ -907,7 +909,8 @@
 			 :quantity qty
 			 :price price
 			 :pictures image
-			 :returned-on "")
+			 :returned-on ""
+			 :returned-qty "0")
 	  (invoice-item-list invoice)))
   (redirect "/setthemcookies"))
 
@@ -925,6 +928,19 @@
 						     (invoice-item-list invoice))))
     (redirect "/setthemcookies")))
 
+(defmacro web-math (&key func a b)
+  `(write-to-string (,func (parse-integer ,a) (parse-integer ,b))))
+
+(defun web-math-add (a b)
+  (web-math :func +
+	    :a a
+	    :b b))
+
+(defun web-math-subtract (a b)
+  (web-math :func -
+	    :a a
+	    :b b))
+
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
   (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
 	 (invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
@@ -933,9 +949,16 @@
 						(string= price (item-price x))
 						(string= qty (item-quantity x))))
 				       (invoice-item-list invoice)))))
-    
-    (setf (item-returned-qty item-r) rtn))
-  (redirect "/check-in-set"))
+    (cond
+      ((string= (item-quantity item-r) (web-math-add (item-returned-qty item-r) rtn))
+       (multiple-value-bind
+	  (second minute hour date month year)
+	(get-decoded-time)
+      (setf (item-returned-on item-r)
+	    (format nil "~d/~d" month date))))
+      (t
+       (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn)))))
+      (redirect "/check-in-set"))
 
 ;;;Standard check in page that displays a table of shows with invoices
 
@@ -1025,7 +1048,7 @@
 (defun prepare-for-table (fad-list)
   (mapcar #'(lambda (x)
 	      (let ((string-path-image (namestring x)))
-		(subseq (namestring string-path-image) 53)))
+		(subseq (namestring string-path-image) 69)))
 	  (remove-if #'(lambda (x)
 			 (cl-fad:directory-exists-p x))
 		     fad-list)))
