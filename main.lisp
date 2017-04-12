@@ -85,7 +85,8 @@
    (returned-qty :initarg :returned-qty
 		 :accessor item-returned-qty)
    (notes :initarg :notes
-	  :accessor item-notes)
+	  :accessor item-notes
+	  :initform '())
    (returned-on :initarg :returned-on
 		:accessor item-returned-on)))
 
@@ -884,7 +885,7 @@
       (mapc #'(lambda (x)
 		(rename-file (second x)
 			     (concatenate 'string "/tmp/"
-					  (third x)) :if-exists :supersede)
+					  (third x)))
 		(move-image-to-invoice-dir x))
 	    
 	    whatever)))
@@ -957,9 +958,45 @@
       (setf (item-returned-on item-r)
 	    (format nil "~d/~d" month date))))
       (t
-       (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn)))))
+       (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn))
+       (add-note-item item-r
+		      (multiple-value-bind
+			    (second minute hour date month year)
+			  (get-decoded-time)
+			(format nil "~d/~d" month date))
+		      rtn))))
       (redirect "/check-in-set"))
 
+(defun add-note-item (item date amt)
+  (if (already-note-p item date)
+      (already-note item date amt)
+      (new-note item date amt)))
+
+(defun already-note-p (item date)
+  (let ((check (remove-if-not #'(lambda (x)
+		     (string= (funcall x :tag) date))
+			      (item-notes item))))
+    (if (null check)
+	'()
+	t)))
+
+(defun already-note (item date amt)
+  (let ((note (first (remove-if-not #'(lambda (x)
+				 (string= (funcall x :tag) date))
+			     (item-notes item)))))
+    (funcall note :add amt)))
+
+(defun new-note (item date amt)
+  (push                                              
+	(let ((count amt)                                                           
+	      (rtnd (concatenate 'string " RTND " date)))                                                 
+	  (let-over-lambda:dlambda                                                                
+	   (:display () (concatenate 'string count             
+				     rtnd))                                   
+	   (:inc () (incf count))                                                 
+	   (:tag () date)                                                 
+	   (:add (x) (setf count (web-math-add count x)))))
+	(item-notes item)))
 ;;;Standard check in page that displays a table of shows with invoices
 
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
@@ -1048,7 +1085,7 @@
 (defun prepare-for-table (fad-list)
   (mapcar #'(lambda (x)
 	      (let ((string-path-image (namestring x)))
-		(subseq (namestring string-path-image) 69)))
+		(subseq (namestring string-path-image) 53)))
 	  (remove-if #'(lambda (x)
 			 (cl-fad:directory-exists-p x))
 		     fad-list)))
@@ -1239,7 +1276,10 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       "}{"
 	       (item-quantity b) "}{"
 	       (item-price b) "}{"
-	       (item-returned-on b) "}"))
+	       (funcall (car (item-notes b)) :display)
+	        "}{"
+	       (item-returned-on b)
+	       "}"))
 
 (defun subseq-img (b)
   (if (null b)
