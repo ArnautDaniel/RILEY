@@ -346,7 +346,8 @@
 					;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
-	     (:script :src "plugins/jq-input.js"))
+	     (:script :src "plugins/jq-input.js")
+	     (:title ,title))
 	    
 	    (:body 
 	     ,@navbar		   	       
@@ -510,7 +511,7 @@
 				     (:a :href "#" "Check In")))))))))))
 
 ;;;gensym portion probably needs to be changed
-(defmacro standard-item-writeup (&key image full-images invoice-data)
+(defmacro standard-item-writeup (&key image full-images)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "section"
 	   (:div :class "row blue-grey"
@@ -867,15 +868,17 @@
 					      (string= (item-quantity x) item-qty)))
 				     (invoice-item-list invoice)))))
 
-    
-    (multiple-value-bind
-	  (second minute hour date month year)
-	(get-decoded-time)
       (setf (item-returned-on item)
-	    (format nil "~d/~d" month date)))
+	    (current-date-string))
     (createpdf2)
     (redirect "/check-in-set")))
 
+(defun current-date-string ()
+  (multiple-value-bind
+	(second minute hour date month year)
+      (get-decoded-time)
+    (declare (ignore second minute hour year))
+    (format nil "~d/~d" month date)))
 ;;;This function has some leftover cruft that needs to be refactored.
 (define-easy-handler (displayimagegot :uri "/displayimagegot") ()
   (let ((whatever (loop for post-parameter in (hunchentoot:post-parameters*)
@@ -952,18 +955,12 @@
 				       (invoice-item-list invoice)))))
     (cond
       ((string= (item-quantity item-r) (web-math-add (item-returned-qty item-r) rtn))
-       (multiple-value-bind
-	  (second minute hour date month year)
-	(get-decoded-time)
       (setf (item-returned-on item-r)
-	    (format nil "~d/~d" month date))))
+	    (current-date-string)))
       (t
        (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn))
        (add-note-item item-r
-		      (multiple-value-bind
-			    (second minute hour date month year)
-			  (get-decoded-time)
-			(format nil "~d/~d" month date))
+			(current-date-string)
 		      rtn))))
       (redirect "/check-in-set"))
 
