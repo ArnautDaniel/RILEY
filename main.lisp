@@ -327,7 +327,8 @@
 (setf (html-mode) :html5)
 
 (defun start-server (port)
-  (start (make-instance 'easy-acceptor :port port)))
+  (start (make-instance 'easy-acceptor :port port))
+  (mito:connect-toplevel :sqlite3 :database-name "riley"))
 
 ;;;Macro's for generating HTML
 ;;;Macros should be designed to work together so pages
@@ -1273,11 +1274,24 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       "}{"
 	       (item-quantity b) "}{"
 	       (item-price b) "}{"
-	       (funcall (car (item-notes b)) :display)
+	       (if (equal (item-notes b) '())
+		   ""
+		   (funcall (first (item-notes b)) :display))
 	        "}{"
 	       (item-returned-on b)
 	       "}"))
 
+;;;This kills the latex
+(defun format-notes (notes)
+  (concat-notes (mapcar #'(lambda (x) (funcall x :display))
+			notes)))
+
+(defun concat-notes (notes)
+  (if (null notes)
+      '()
+      (concatenate 'string (car notes) "\\\\"
+		   (concat-notes (cdr notes)))))
+      
 (defun subseq-img (b)
   (if (null b)
       ""
@@ -1315,31 +1329,3 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
     (t
      (cons (list (car b) (cadr b) (third b)) (picture-list (cdddr b))))))
 
-;;; End of Latex Section
-
-;;;Saving and Loading Data
-
-(conspack:defencoding invoice
-  id-num set-name date-out show-name contact-name
-  check-in-accounting item-list finalized pdf-location)
-
-(conspack:defencoding item
-  price quantity description invoices-on picture shows-on returned-on)
-
-(defun save-data ()
-  (let* ((saved-list (mapcar #'conspack:encode-object (invoice-item-list (car *GLOBAL-INVOICE-LIST*)))))
-    
-    
-    (with-open-file (out "caps.db"
-			 :direction :output
-			 :if-exists :supersede)
-      (with-standard-io-syntax
-	(print saved-list out)))))
-
-(defun load-data ()
-  (let ((input-invoice (with-open-file (in "caps.db")
-			 (with-standard-io-syntax
-			   (read in)))))
-    (setf *GLOBAL-INVOICE-LIST* (mapcar #'(lambda (x)
-					    (conspack:decode-object 'invoice x))
-					input-invoice))))
