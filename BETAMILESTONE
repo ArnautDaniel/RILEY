@@ -49,3 +49,19 @@ Multiple picture modal without making MULTIPLE modals
 Rotation of images
 Carousel in the image card for that item (easy)
 Shows-on and invoices-on needs to be finished for ITEMS
+
+
+
+List of functions who's value returns "`x RTN'D `y/z"
+
+Incrementer function when called with num to increment
+returns string otherwise
+
+in a hash table by dates
+
+key:value
+4/7:3 RTND on 4/7
+
+Evalutating hash value increments or adds to the `3
+in the above scenario
+

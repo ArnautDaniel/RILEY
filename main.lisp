@@ -148,6 +148,18 @@
    (status :initarg :status
 	   :accessor user-status)))
 
+(defclass user-db ()
+  ((name :initarg :name
+	 :accessor db-user-name
+	 :col-type :text)
+   (rank :initarg :rank
+	 :accessor db-user-rank
+	 :col-type :text)
+   (password :initarg :password
+	     :accessor db-user-pass
+	     :col-type :text))
+  (:metaclass mito:dao-table-class))
+	 
 (defclass message ()
   ((sender :initarg :sender
 	   :accessor message-sender)
@@ -196,6 +208,8 @@
   (find name data-lst :test #'string-equal
 	:key #'show-name))
 
+(defun find-show-name-db (name)
+  (mito:find-dao 'show-db :name name))
 ;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
 (defun add-show (show-obj)
   (push (make-instance 'show
