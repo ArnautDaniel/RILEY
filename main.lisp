@@ -67,18 +67,6 @@
    (pdf-location :initarg :pdf-location
 		 :accessor invoice-pdf-location)))
 
-(defclass invoice-db ()
-  ((set-name :initarg :set-name
-	     :accessor db-set-name
-	     :col-type :text)
-   (date-out :initarg :date-out
-	     :accessor db-date-out
-	     :col-type :text)
-   (show :col-type show-db
-	 :initarg :show-db
-	 :accessor invoice-show))
-  (:metaclass mito:dao-table-class))
-
 (defclass check-in ()
   ((date :initarg :date
 	 :accessor date)
@@ -114,6 +102,19 @@
    (returned-on :initarg :returned-on
 		:accessor item-returned-on)))
 
+
+(defclass invoice-db ()
+  ((set-name :initarg :set-name
+	     :accessor db-set-name
+	     :col-type :text)
+   (date-out :initarg :date-out
+	     :accessor db-date-out
+	     :col-type :text)
+   (show :col-type show-db
+	 :initarg :show-db
+	 :accessor invoice-show))
+  (:metaclass mito:dao-table-class))
+
 (defclass item-db ()
   ((price :initarg :price
 	  :accessor :db-item-price
@@ -125,7 +126,7 @@
 		:accessor :db-item-desc
 		:col-type :text)
    (invoice :col-type invoice-db
-	    :initarg invoice-db
+	    :initarg :invoice-db
 	    :accessor db-item-invoice))
   (:metaclass mito:dao-table-class))
 
@@ -959,12 +960,15 @@
 	 (price (hunchentoot:post-parameter "input-item-price"))
 	 (qty (hunchentoot:post-parameter "input-item-qty"))
 	 (image (hunchentoot:post-parameter "image-data"))
-	 (set-name (invoice-set-name invoice)))
+	 (set-name (invoice-set-name invoice))
+	 (show-name (show-name invoice)))
     
     (mito:create-dao 'item-db :description description
 		     :quantity qty
 		     :price price
-		     :invoice-db (mito:find-dao 'invoice-db :set-name set-name))
+		     :invoice-db (mito:find-dao 'invoice-db
+						:show (mito:find-dao 'show-db :name show-name)
+						:set-name set-name))
     
 
     (push (make-instance 'item :description description
@@ -982,6 +986,7 @@
 	 (item (hunchentoot:post-parameter "item"))
 	 (item-price (hunchentoot:post-parameter "item-price"))
 	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
+    
     (if (not (invoice-finalized invoice))
 	(setf (invoice-item-list invoice) (remove-if #'(lambda (x)
 							 (and (string= (item-description x) item)
