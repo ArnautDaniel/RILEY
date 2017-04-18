@@ -30,6 +30,18 @@
    (name :initarg :name
 	 :accessor show-name)))
 
+(defclass show-db ()
+  ((contact :initarg :contact
+	    :accessor db-contact
+	    :col-type :text)
+   (phone-number :initarg :phone-number
+		 :accessor db-phone-number
+		 :col-type :text)
+   (name :initarg :name
+	 :accessor db-show-name
+	 :col-type :text))
+  (:metaclass mito:dao-table-class))
+
 (defclass invoice ()
   ((id-num :initarg :id-num
 	   :accessor invoice-id-num)
@@ -54,6 +66,18 @@
 	      :initform '())
    (pdf-location :initarg :pdf-location
 		 :accessor invoice-pdf-location)))
+
+(defclass invoice-db ()
+  ((set-name :initarg :set-name
+	     :accessor db-set-name
+	     :col-type :text)
+   (date-out :initarg :date-out
+	     :accessor db-date-out
+	     :col-type :text)
+   (show :col-type show-db
+	 :initarg :show-db
+	 :accessor invoice-show))
+  (:metaclass mito:dao-table-class))
 
 (defclass check-in ()
   ((date :initarg :date
@@ -84,11 +108,26 @@
 	     :initform '())
    (returned-qty :initarg :returned-qty
 		 :accessor item-returned-qty)
-   (notes :initarg :notes
+  (notes :initarg :notes
 	  :accessor item-notes
 	  :initform '())
    (returned-on :initarg :returned-on
 		:accessor item-returned-on)))
+
+(defclass item-db ()
+  ((price :initarg :price
+	  :accessor :db-item-price
+	  :col-type :text)
+   (quantity :initarg :quantity
+	     :accessor :db-item-qty
+	     :col-type :text)
+   (description :initarg :description
+		:accessor :db-item-desc
+		:col-type :text)
+   (invoice :col-type invoice-db
+	    :initarg invoice-db
+	    :accessor db-item-invoice))
+  (:metaclass mito:dao-table-class))
 
 (defclass user ()
   ((name :initarg :name
@@ -269,6 +308,13 @@
 			   contact-name
 			   root-dir
 			   pdf-location)
+  ;;;Check if show exists in db table
+  ;;;if not then create it and link it to the new set
+  (if (not (mito:find-dao 'show-db :name show-name))
+      (add-show-to-db :name show-name
+		  :contact contact-name)
+      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name)))
+
   (push (make-instance 'invoice
 		       :id-num id-num
 		       :set-name set-name
@@ -278,6 +324,9 @@
 		       :root-dir root-dir
 		       :pdf-location pdf-location)
 	*global-invoice-list*))
+(defun add-show-to-db (&key name contact)
+  
+  (mito:create-dao 'show-db :name name :contact contact :phone-number "000"))
 
 ;;;USED ALOT.  Lets you find an invoice on the global invoice list
 ;;;from the *showname*-*setname* form of a cookie string.
@@ -909,7 +958,15 @@
 	 (description (hunchentoot:post-parameter "input-item-description"))
 	 (price (hunchentoot:post-parameter "input-item-price"))
 	 (qty (hunchentoot:post-parameter "input-item-qty"))
-	 (image (hunchentoot:post-parameter "image-data")))
+	 (image (hunchentoot:post-parameter "image-data"))
+	 (set-name (invoice-set-name invoice)))
+    
+    (mito:create-dao 'item-db :description description
+		     :quantity qty
+		     :price price
+		     :invoice-db (mito:find-dao 'invoice-db :set-name set-name))
+    
+
     (push (make-instance 'item :description description
 			 :quantity qty
 			 :price price
