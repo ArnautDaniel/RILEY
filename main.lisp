@@ -96,7 +96,7 @@
 	     :initform '())
    (returned-qty :initarg :returned-qty
 		 :accessor item-returned-qty)
-  (notes :initarg :notes
+   (notes :initarg :notes
 	  :accessor item-notes
 	  :initform '())
    (returned-on :initarg :returned-on
@@ -159,7 +159,7 @@
 	     :accessor db-user-pass
 	     :col-type :text))
   (:metaclass mito:dao-table-class))
-	 
+
 (defclass message ()
   ((sender :initarg :sender
 	   :accessor message-sender)
@@ -210,6 +210,7 @@
 
 (defun find-show-name-db (name)
   (mito:find-dao 'show-db :name name))
+
 ;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
 (defun add-show (show-obj)
   (push (make-instance 'show
@@ -327,7 +328,7 @@
   ;;;if not then create it and link it to the new set
   (if (not (mito:find-dao 'show-db :name show-name))
       (add-show-to-db :name show-name
-		  :contact contact-name)
+		      :contact contact-name)
       (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name)))
 
   (push (make-instance 'invoice
@@ -548,6 +549,9 @@
 					    :id "message" :name "message")
 				    (:button :type "Submit Message" :class "btn btn-default btn-info" "Message")))))	   
 	   ,messages)))
+
+;;;Ugly as hell
+;;;Tree's lists so they work properly on the website
 (defun pair-off (lst)
   (cond
     ((null lst) '())
@@ -896,8 +900,8 @@
 ;;;Basic function to create a new show		      
 (define-easy-handler (write-order :uri "/write-order") ()
   (standard-page (:title "Write Order")
-    (:navbar (test-navbar))
-    (standard-order-intro)))
+		 (:navbar (test-navbar))
+		 (standard-order-intro)))
 
 ;;;Adds a message to the global message list
 ;;;This can be a notification for a new order/show/invoice
@@ -916,8 +920,8 @@
   (let ((username (cookie-in "current-user")))
     (if (not (or (string= username "login") (string= username "")))
 	(standard-page (:title "Dashboard")
-	  (:navbar  (test-navbar))
-	  (standard-dashboard :messages (standard-global-messages)))
+		       (:navbar  (test-navbar))
+		       (standard-dashboard :messages (standard-global-messages)))
 	(redirect "/login"))))
 
 ;;;This function needs to be redone.  Currently it takes the post parameters of the item
@@ -933,8 +937,8 @@
 					      (string= (item-quantity x) item-qty)))
 				     (invoice-item-list invoice)))))
 
-      (setf (item-returned-on item)
-	    (current-date-string))
+    (setf (item-returned-on item)
+	  (current-date-string))
     (createpdf2)
     (redirect "/check-in-set")))
 
@@ -950,13 +954,13 @@
 		     if (equal (car post-parameter) "picture-batch")
 		     collect post-parameter)))
     (standard-page (:title "Picture Batch")
-      (mapc #'(lambda (x)
-		(rename-file (second x)
-			     (concatenate 'string "/tmp/"
-					  (third x)))
-		(move-image-to-invoice-dir x))
-	    
-	    whatever)))
+		   (mapc #'(lambda (x)
+			     (rename-file (second x)
+					  (concatenate 'string "/tmp/"
+						       (third x)))
+			     (move-image-to-invoice-dir x))
+			 
+			 whatever)))
   (redirect "/setthemcookies"))
 
 ;;;Current solution to being able to refresh pages without putting data in the URI
@@ -1032,14 +1036,14 @@
 				       (invoice-item-list invoice)))))
     (cond
       ((string= (item-quantity item-r) (web-math-add (item-returned-qty item-r) rtn))
-      (setf (item-returned-on item-r)
-	    (current-date-string)))
+       (setf (item-returned-on item-r)
+	     (current-date-string)))
       (t
        (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn))
        (add-note-item item-r
-			(current-date-string)
+		      (current-date-string)
 		      rtn))))
-      (redirect "/check-in-set"))
+  (redirect "/check-in-set"))
 
 (defun add-note-item (item date amt)
   (if (already-note-p item date)
@@ -1048,7 +1052,7 @@
 
 (defun already-note-p (item date)
   (let ((check (remove-if-not #'(lambda (x)
-		     (string= (funcall x :tag) date))
+				  (string= (funcall x :tag) date))
 			      (item-notes item))))
     (if (null check)
 	'()
@@ -1056,27 +1060,27 @@
 
 (defun already-note (item date amt)
   (let ((note (first (remove-if-not #'(lambda (x)
-				 (string= (funcall x :tag) date))
-			     (item-notes item)))))
+					(string= (funcall x :tag) date))
+				    (item-notes item)))))
     (funcall note :add amt)))
 
 (defun new-note (item date amt)
   (push                                              
-	(let ((count amt)                                                           
-	      (rtnd (concatenate 'string " RTND " date)))                                                 
-	  (let-over-lambda:dlambda                                                                
-	   (:display () (concatenate 'string count             
-				     rtnd))                                   
-	   (:inc () (incf count))                                                 
-	   (:tag () date)                                                 
-	   (:add (x) (setf count (web-math-add count x)))))
-	(item-notes item)))
+   (let ((count amt)                                                           
+	 (rtnd (concatenate 'string " RTND " date)))                                                 
+     (let-over-lambda:dlambda                                                                
+      (:display () (concatenate 'string count             
+				rtnd))                                   
+      (:inc () (incf count))                                                 
+      (:tag () date)                                                 
+      (:add (x) (setf count (web-math-add count x)))))
+   (item-notes item)))
 ;;;Standard check in page that displays a table of shows with invoices
 
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
-    (:navbar (test-navbar))
-    (standard-check-in-showlist)))
+		 (:navbar (test-navbar))
+		 (standard-check-in-showlist)))
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
 (define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") (showname setname)
@@ -1089,14 +1093,14 @@
 	 (showname (show-name invoice))
 	 (setname (invoice-set-name invoice)))
     (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
-      (:navbar (test-navbar))
-      (standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
-				 :set (fmt "~A" (escape-string setname))
-				 :contact (fmt "~A" (escape-string (invoice-contact-name invoice)))
-				 :pic-num (fmt "~A" (escape-string (count-pics-from-invoice
-								    (concatenate 'string showname
-										 "-" setname)))))
-      (standard-check-in :invoice invoice))))
+		   (:navbar (test-navbar))
+		   (standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
+					      :set (fmt "~A" (escape-string setname))
+					      :contact (fmt "~A" (escape-string (invoice-contact-name invoice)))
+					      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice
+										 (concatenate 'string showname
+											      "-" setname)))))
+		   (standard-check-in :invoice invoice))))
 
 
 ;;;Provides all the abstraction for generating a pdf from an invoice
@@ -1128,20 +1132,20 @@
 					  change-pic-cookie)))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
-      (:navbar (test-navbar))
-      (standard-three-nine-hook
-	  (:bodythree
-	   ((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
-				      :set (fmt "~A" (escape-string setname))
-				      :contact (fmt "~A" (escape-string contact))
-				      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
-													      "-" setname)))))
-	    (standard-picture-upload)))
-	
-	(standard-item-writeup :image (first images-filtered)
-			       :full-images (rest images-filtered))
-	(standard-item-list-table :invoice invoice)
-	(standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
+		   (:navbar (test-navbar))
+		   (standard-three-nine-hook
+		    (:bodythree
+		     ((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
+						:set (fmt "~A" (escape-string setname))
+						:contact (fmt "~A" (escape-string contact))
+						:pic-num (fmt "~A" (escape-string (count-pics-from-invoice (concatenate 'string showname
+															"-" setname)))))
+		      (standard-picture-upload)))
+		    
+		    (standard-item-writeup :image (first images-filtered)
+					   :full-images (rest images-filtered))
+		    (standard-item-list-table :invoice invoice)
+		    (standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
 
 
 (defun sort-item-list (itemlist pic-need)
@@ -1190,7 +1194,7 @@
 
 (define-easy-handler (home :uri "/") ()
   (standard-page (:title "RILEY Inventory System")
-    (redirect "/login")))
+		 (redirect "/login")))
 
 (define-easy-handler (check-login :uri "/check-login") ()
   (let
@@ -1215,7 +1219,7 @@
 
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
-    (standard-login)))
+		 (standard-login)))
 
 (define-easy-handler (rotate-image :uri "/rotate-image") (direction image)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
@@ -1353,7 +1357,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       (if (equal (item-notes b) '())
 		   ""
 		   (funcall (first (item-notes b)) :display))
-	        "}{"
+	       "}{"
 	       (item-returned-on b)
 	       "}"))
 
@@ -1367,7 +1371,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       '()
       (concatenate 'string (car notes) "\\\\"
 		   (concat-notes (cdr notes)))))
-      
+
 (defun subseq-img (b)
   (if (null b)
       ""
