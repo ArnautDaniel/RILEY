@@ -213,8 +213,17 @@
   (find name data-lst :test #'string-equal
 	:key #'show-name))
 
-(defun find-show-name-db (name)
-  (mito:find-dao 'show-db :name name))
+
+;;;One way to do it that needs more work
+;;;Alot more work...
+(defmacro find-show-db (&rest args)
+  (apply #'mito:find-dao 'show-db args))
+
+(defmacro find-invoice-db (&rest args)
+  (apply #'mito:find-dao 'invoice-db args))
+
+(defmacro find-item-db (&rest args)
+  (apply #'mito:find-dao 'item-db args))
 
 ;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
 (defun add-show (show-obj)
@@ -321,6 +330,7 @@
 (defun find-invoice (invoicename)
   (find invoicename *global-invoice-list* :test #'string-equal
 	:key #'show-name))
+
 
 ;;;Create an invoice and and push it onto the *GLOBAL-INVOICE-LIST*
 (defun register-invoice (&key id-num
@@ -637,11 +647,11 @@
 					 :data-beloworigin "true"
 					 "Rotate")
 				    (:ul :id "dropdown1" :class "dropdown-content"
-					 (:li (:a :href (format nil "rotate-image?direction=~a&image=~a"
-								"left" ,image)
+					 (:li (:a :href (format nil "rotate-image?image=~a"
+								 ,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
-					 (:li (:a :href (format nil "rotate-image?direction=~a&image=~a"
-								"right" ,image)
+					 (:li (:a :href (format nil "rotate-image?image=~a"
+								 ,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_right") "Rotate Right")))
 				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))
@@ -1226,7 +1236,7 @@
   (standard-page (:title "Login")
 		 (standard-login)))
 
-(define-easy-handler (rotate-image :uri "/rotate-image") (direction image)
+(define-easy-handler (rotate-image :uri "/rotate-image") (image)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (rotation (/ PI 2))
 	 (root-dir (invoice-root-dir invoice))
