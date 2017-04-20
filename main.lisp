@@ -1,4 +1,9 @@
 ;;;Initial Declarations
+
+;;;Updating item in db
+;;;let binding, setf (slot-value 'obj 'slot) 'new-value
+;;;mito:save-dao 'obj
+
 (defpackage :riley
   (:use :cl
 	:cl-who
@@ -117,13 +122,13 @@
 
 (defclass item-db ()
   ((price :initarg :price
-	  :accessor :db-item-price
+	  :accessor db-item-price
 	  :col-type :text)
    (quantity :initarg :quantity
-	     :accessor :db-item-qty
+	     :accessor db-item-qty
 	     :col-type :text)
    (description :initarg :description
-		:accessor :db-item-desc
+		:accessor db-item-desc
 		:col-type :text)
    (invoice :col-type invoice-db
 	    :initarg :invoice-db
@@ -328,8 +333,8 @@
   ;;;if not then create it and link it to the new set
   (if (not (mito:find-dao 'show-db :name show-name))
       (add-show-to-db :name show-name
-		      :contact contact-name)
-      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name)))
+		      :contact contact-name))
+      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name))
 
   (push (make-instance 'invoice
 		       :id-num id-num
