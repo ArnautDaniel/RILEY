@@ -23,20 +23,6 @@
 
 ;;;All predicted data objects neededers
 
-(defclass show ()
-  ((contact-name :initarg :contact-name
-		 :accessor show-contact-name)
-   (phone-number :initarg :phone-number
-		 :accessor show-phone-number)
-   (order-amount :initarg :order-amount
-		 :initform 0
-		 :accessor show-order-amount)
-   (list-of-invoices :initarg :list-of-invoices
-		     :initform '()
-		     :accessor list-of-invoices)
-   (name :initarg :name
-	 :accessor show-name)))
-
 (defclass show-db ()
   ((contact :initarg :contact
 	    :accessor db-contact
@@ -48,67 +34,6 @@
 	 :accessor db-show-name
 	 :col-type :text))
   (:metaclass mito:dao-table-class))
-
-(defclass invoice ()
-  ((id-num :initarg :id-num
-	   :accessor invoice-id-num)
-   (set-name :initarg :set-name
-	     :accessor invoice-set-name)
-   (date-out :initarg :date
-	     :initform 0
-	     :accessor invoice-date-out)
-   (show-name :initarg :show-name
-	      :accessor show-name)
-   (contact-name :initarg :contact-name
-		 :accessor invoice-contact-name)
-   (check-in-accounting :initarg :check-in-accounting
-			:accessor invoice-check-in-accounting
-			:initform '())
-   (item-list :initarg :itemlist
-	      :accessor invoice-item-list)
-   (root-dir :initarg :root-dir
-	     :accessor invoice-root-dir)
-   (finalized :initarg :finalized
-	      :accessor invoice-finalized
-	      :initform '())
-   (pdf-location :initarg :pdf-location
-		 :accessor invoice-pdf-location)))
-
-(defclass check-in ()
-  ((date :initarg :date
-	 :accessor date)
-   (invoice-refer :initarg :invoice-refer
-		  :accessor check-in-invoice-refer)
-   (checked-by :initarg :checked-by
-	       :accessor check-in-checked-by)
-   (show-name :initarg :show-name
-	      :accessor check-in-show-name)
-   (checks :initarg :checks
-	   :accessor check-in-checks)))
-
-(defclass item ()
-  ((price :initarg :price
-	  :accessor item-price)
-   (quantity :initarg :quantity
-	     :accessor item-quantity)
-   (description :initarg :description
-		:accessor item-description)
-   (invoices-on :initarg :invoices-on
-		:accessor item-invoices-on
-		:initform '())
-   (picture    :initarg :pictures
-	       :accessor item-picture)
-   (shows-on :initarg :shows-on
-	     :accessor item-shows-on
-	     :initform '())
-   (returned-qty :initarg :returned-qty
-		 :accessor item-returned-qty)
-   (notes :initarg :notes
-	  :accessor item-notes
-	  :initform '())
-   (returned-on :initarg :returned-on
-		:accessor item-returned-on)))
-
 
 (defclass invoice-db ()
   ((set-name :initarg :set-name
@@ -152,24 +77,6 @@
 		:col-type :text))
   (:metaclass mito:dao-table-class))
 
-(defclass user ()
-  ((name :initarg :name
-	 :accessor user-name)
-   (rank :initarg :rank
-	 :accessor user-rank)
-   (password :initarg :password
-	     :accessor user-password)
-   (shows-checked :initarg :shows-checked
-		  :accessor user-shows-checked)
-   (invoice-history :initarg :invoice-history
-		    :accessor user-invoice-history)
-   (points :initarg :points
-	   :accessor user-points)
-   (messages :initarg :messages
-	     :accessor user-messages)
-   (status :initarg :status
-	   :accessor user-status)))
-
 (defclass user-db ()
   ((name :initarg :name
 	 :accessor db-user-name
@@ -182,44 +89,9 @@
 	     :col-type :text))
   (:metaclass mito:dao-table-class))
 
-(defclass message ()
-  ((sender :initarg :sender
-	   :accessor message-sender)
-   (recipient :initarg :recipient
-	      :accessor message-recipient)
-   (date :initarg :date
-	 :accessor message-date)
-   (content :initarg :content
-	    :accessor message-content)
-   (reply :initarg :reply
-	  :accessor message-reply)
-   (read-date :initarg :read-date
-	      :accessor message-read-date)
-   (read-on :initarg :read-on
-	    :accessor message-read-on)
-   (private :initarg :private
-	    :accessor message-private)
-   (show-name :initarg :show-name
-	      :accessor message-show-name)
-   (invoice-name :initarg :invoice-name
-		 :accessor message-invoice-name)
-   (item-name :initarg :item-name
-	      :accessor message-item-name)))
-
-(defclass dashboard ()
-  ((posts :initarg :posts
-	  :accessor dashboard-posts)
-   (current-date :initarg :current-date
-		 :accessor dashboard-current-date)))
-
 ;;; Helper functions for classes
 
 ;;;Using a string NAME search for SHOW-NAME in DATA-LST
-(defun find-show-name (name data-lst)
-  (find name data-lst :test #'string-equal
-	:key #'show-name))
-
-
 ;;;One way to do it that needs more work
 ;;;Alot more work...
 (defun find-show-db (&rest args)
@@ -228,51 +100,17 @@
 (defun find-invoice-db (&rest args)
   (apply #'mito:find-dao 'invoice-db args))
 
-(defmacro find-item-db (&rest args)
+(defun find-item-db (&rest args)
   (apply #'mito:find-dao 'item-db args))
 
-;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
-
-;;;Search *USERS* for USERNAME
-(defun find-user (username)
-  (find username *users* :test #'string-equal
-	:key #'user-name))
-
+(defun find-user-db (&rest args)
+  (apply #'mito:find-dao 'user-db args))
 ;;;Create a user from a USERNAME and PASSWORD and push onto *USERS*
 (defun register-user (&key username password)
-  (push (make-instance 'user
+  (mito:create-dao 'user-db 
 		       :name username
 		       :password password
-		       :rank "user")
-	*users*))
-
-;;;Find all messages recieved by GLOBAL
-(defun find-global-messages ()
-  (remove-if-not (lambda (x)
-		   (string= "global" (message-recipient x)))
-		 *current-message-list*))
-
-;;;Create a message from any of the valid keys and push it onto the *CURRENT-MESSAGE-LIST*
-(defun register-message (&key sender recipient
-			   date content
-			   reply read-date
-			   read-on private
-			   show-name
-			   invoice-name
-			   item-name)
-  (push (make-instance 'message
-		       :sender sender
-		       :recipient recipient
-		       :reply reply
-		       :date date
-		       :content content
-		       :read-date read-date
-		       :read-on read-on
-		       :private private
-		       :show-name show-name
-		       :invoice-name invoice-name
-		       :item-name item-name)
-	*current-message-list*))
+		       :rank "user"))
 
 ;;;Find an invoice-object connected to a message
 ;;;Used for generating buttons on the dashboard
@@ -344,7 +182,7 @@
 
 
 ;;;Create an invoice and and push it onto the *GLOBAL-INVOICE-LIST*
-(defun register-invoice (&key id-num
+(defun register-invoice (&key 
 			   set-name
 			   show-name
 			   contact-name
@@ -355,36 +193,17 @@
   (if (not (mito:find-dao 'show-db :name show-name))
       (add-show-to-db :name show-name
 		      :contact contact-name))
-      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name) :root-dir root-dir :pdf-location "")
+      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name) :root-dir root-dir :pdf-location pdf-location))
 
-  (push (make-instance 'invoice
-		       :id-num id-num
-		       :set-name set-name
-		       :show-name show-name
-		       :contact-name contact-name
-		       :itemlist '()
-		       :root-dir root-dir
-		       :pdf-location pdf-location)
-	*global-invoice-list*))
 (defun add-show-to-db (&key name contact)
   (mito:create-dao 'show-db :name name :contact contact :phone-number "000"))
-
-;;;USED ALOT.  Lets you find an invoice on the global invoice list
-;;;from the *showname*-*setname* form of a cookie string.
-;(defun find-invoice-from-cookie (invoice-string)
-;  (if (not (string= "none" invoice-string))
-;      (let* ((magic-number (search "-" invoice-string))
-;	     (showname (subseq invoice-string 0 magic-number))
-;	     (setname (subseq invoice-string (+ magic-number 1)))
-;	     (temp-invoice (make-instance 'invoice :show-name showname
-;					  :set-name setname)))
-;	(find-invoice-from-invoice temp-invoice))))
 
 (defun find-invoice-from-cookie (id)
   (find-invoice-db :id (parse-integer id)))
 
 (defun find-invoice-item-list (id)
   (mito:retrieve-dao 'item-db :invoice-id (parse-integer id)))
+
 ;;;Helper function for moving uploaded pictures to the correct directory
 ;;;Needs to delete the pictures after and be expanded.
 ;;;This version (past revision 66) now has side effects
