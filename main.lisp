@@ -4,6 +4,8 @@
 ;;;let binding, setf (slot-value 'obj 'slot) 'new-value
 ;;;mito:save-dao 'obj
 
+;;;We're officially in a broken state!
+
 (defpackage :riley
   (:use :cl
 	:cl-who
@@ -117,7 +119,13 @@
 	     :col-type :text)
    (show :col-type show-db
 	 :initarg :show-db
-	 :accessor invoice-show))
+	 :accessor invoice-show)
+   (root-dir :col-type :text
+	     :accessor invoice-root-dir
+	     :initarg :root-dir)
+   (pdf-location :initarg :pdf-location
+		 :accessor invoice-pdf-location
+		 :col-type :text))
   (:metaclass mito:dao-table-class))
 
 (defclass item-db ()
@@ -132,7 +140,13 @@
 		:col-type :text)
    (invoice :col-type invoice-db
 	    :initarg :invoice-db
-	    :accessor db-item-invoice))
+	    :accessor db-item-invoice)
+   (picture :initarg :pictures
+	    :accessor item-picture
+	    :col-type :text)
+   (returned-qty :initarg :returned-qty
+		 :accessor item-returned-qty
+		 :col-type :text))
   (:metaclass mito:dao-table-class))
 
 (defclass user ()
@@ -216,10 +230,10 @@
 
 ;;;One way to do it that needs more work
 ;;;Alot more work...
-(defmacro find-show-db (&rest args)
+(defun find-show-db (&rest args)
   (apply #'mito:find-dao 'show-db args))
 
-(defmacro find-invoice-db (&rest args)
+(defun find-invoice-db (&rest args)
   (apply #'mito:find-dao 'invoice-db args))
 
 (defmacro find-item-db (&rest args)
@@ -344,7 +358,7 @@
   (if (not (mito:find-dao 'show-db :name show-name))
       (add-show-to-db :name show-name
 		      :contact contact-name))
-      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name))
+      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name) :root-dir root-dir :pdf-location "")
 
   (push (make-instance 'invoice
 		       :id-num id-num
@@ -356,20 +370,24 @@
 		       :pdf-location pdf-location)
 	*global-invoice-list*))
 (defun add-show-to-db (&key name contact)
-  
   (mito:create-dao 'show-db :name name :contact contact :phone-number "000"))
 
 ;;;USED ALOT.  Lets you find an invoice on the global invoice list
 ;;;from the *showname*-*setname* form of a cookie string.
-(defun find-invoice-from-cookie (invoice-string)
-  (if (not (string= "none" invoice-string))
-      (let* ((magic-number (search "-" invoice-string))
-	     (showname (subseq invoice-string 0 magic-number))
-	     (setname (subseq invoice-string (+ magic-number 1)))
-	     (temp-invoice (make-instance 'invoice :show-name showname
-					  :set-name setname)))
-	(find-invoice-from-invoice temp-invoice))))
+;(defun find-invoice-from-cookie (invoice-string)
+;  (if (not (string= "none" invoice-string))
+;      (let* ((magic-number (search "-" invoice-string))
+;	     (showname (subseq invoice-string 0 magic-number))
+;	     (setname (subseq invoice-string (+ magic-number 1)))
+;	     (temp-invoice (make-instance 'invoice :show-name showname
+;					  :set-name setname)))
+;	(find-invoice-from-invoice temp-invoice))))
 
+(defun find-invoice-from-cookie (id)
+  (find-invoice-db :id (parse-integer id)))
+
+(defun find-invoice-item-list (id)
+  (mito:retrieve-dao 'item-db :invoice-id (parse-integer id)))
 ;;;Helper function for moving uploaded pictures to the correct directory
 ;;;Needs to delete the pictures after and be expanded.
 ;;;This version (past revision 66) now has side effects
@@ -981,7 +999,10 @@
 ;;;Current solution to being able to refresh pages without putting data in the URI
 ;;;May need to start putting data in the URI but the function works pretty decently already.
 (define-easy-handler (pre-set-cookies :uri "/pre-set-cookies") (showname setname)
-  (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+  (set-cookie "current-invoice" :value (mito:object-id
+					(mito:find-dao 'invoice-db
+						       :set-name setname
+						       :show (mito:find-dao 'show-db :name showname))))
   (redirect "/setthemcookies"))
 
 ;;;Adds an item from the additem panel on the write order page
@@ -1099,7 +1120,11 @@
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
 (define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") (showname setname)
-  (set-cookie "current-invoice" :value (concatenate 'string showname "-" setname))
+  (set-cookie "current-invoice"
+	      :value (mito:object-id
+		      (mito:find-dao 'invoice-db
+				     :set-name setname
+				     :show (mito:find-dao 'show-db :name showname))))
   (redirect "/check-in-set"))
 
 ;;;Presents a table of items that have not been checked in yet
@@ -1137,9 +1162,9 @@
 ;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
-	 (showname (show-name invoice))
-	 (setname (invoice-set-name invoice))
-	 (contact (invoice-contact-name invoice))
+	 (showname (db-show-name (invoice-show  invoice)))
+	 (setname (db-set-name invoice))
+	 (contact (db-contact (invoice-show  invoice)))
 	 (change-pic-cookie (cookie-in "current-picture"))
 	 (images (prepare-for-table (cl-fad:list-directory
 				     (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
@@ -1160,7 +1185,7 @@
 		    (standard-item-writeup :image (first images-filtered)
 					   :full-images (rest images-filtered))
 		    (standard-item-list-table :invoice invoice)
-		    (standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
+		    (standard-pdf-iframe :pdf "")))))
 
 
 (defun sort-item-list (itemlist pic-need)
