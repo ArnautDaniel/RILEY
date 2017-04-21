@@ -15,12 +15,6 @@
 	:trivial-shell
 	:opticl))
 
-(defvar *current-message-list* '())
-(defvar *global-invoice-list* '())
-(defvar *users* '())
-(defvar *global-invoice-id* 0)
-(defvar *current-show-list* '())
-
 ;;;All predicted data objects neededers
 
 (defclass show-db ()
@@ -723,7 +717,7 @@
 				(directory-safe showname)
 				"/" (directory-safe setname) "/")))
     (ensure-directories-exist root-dir)
-    (register-invoice :id-num (+ *global-invoice-id* 1)
+    (register-invoice 
 		      :set-name setname
 		      :show-name showname
 		      :contact-name contact
