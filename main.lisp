@@ -146,7 +146,10 @@
 	    :col-type :text)
    (returned-qty :initarg :returned-qty
 		 :accessor item-returned-qty
-		 :col-type :text))
+		 :col-type :text)
+   (returned-on :initarg :returned-on
+		:accessor item-returned-on
+		:col-type :text))
   (:metaclass mito:dao-table-class))
 
 (defclass user ()
@@ -211,17 +214,6 @@
 
 ;;; Helper functions for classes
 
-;;;Create a show, doesn't appear to be used at the moment.
-(defun make-show (&key contact-name-t phone-number-t
-		    order-amount-t list-of-invoices-t
-		    name-t )
-  (make-instance 'show
-		 :name name-t
-		 :contact-name contact-name-t
-		 :phone-number phone-number-t
-		 :order-amount order-amount-t
-		 :list-of-invoices list-of-invoices-t))
-
 ;;;Using a string NAME search for SHOW-NAME in DATA-LST
 (defun find-show-name (name data-lst)
   (find name data-lst :test #'string-equal
@@ -240,14 +232,6 @@
   (apply #'mito:find-dao 'item-db args))
 
 ;;;Provide the function a show-obj and push a new show onto the *CURRENT-SHOW-LIST*
-(defun add-show (show-obj)
-  (push (make-instance 'show
-		       :name (show-name show-obj)
-		       :contact-name (show-contact-name show-obj)
-		       :phone-number (show-phone-number show-obj)
-		       :order-amount (show-order-amount show-obj)
-		       :list-of-invoices (list-of-invoices show-obj))
-	*current-show-list* ))
 
 ;;;Search *USERS* for USERNAME
 (defun find-user (username)
@@ -318,6 +302,12 @@
 		   (string= "" (item-returned-on x)))
 		 inv-itemlist))
 
+(defun remove-returned-db (inv-id)
+  (let ((itemlist (find-invoice-item-list inv-id)))
+    (remove-if-not (lambda (x)
+		     (string= "" (item-returned-on x)))
+		   itemlist)))
+
 ;;;Helper function rarely used.  Finds an invoice from a make instanced invoice
 (defun find-invoice-from-invoice (inv)
   (let ((setname (invoice-set-name inv))
@@ -339,6 +329,13 @@
   (mapcar #'(lambda (x)
 	      (item-picture x))
 	  (invoice-item-list invoice)))
+
+;;DB Version
+(defun list-image-loc (inv-id)
+  (let ((itemlist (find-invoice-item-list inv-id)))
+    (mapcar #'(lambda (x)
+		(item-picture x))
+	    itemlist)))
 
 ;;;Search the *GLOBAL-INVOICE-LIST* for INVOICENAME
 (defun find-invoice (invoicename)
