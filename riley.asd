@@ -17,14 +17,11 @@
   :author "Jack Lucas"
   :license "MIT"
   :depends-on (:cl-who :cl-pass :hunchentoot
-:parenscript :trivial-shell :opticl :mito 
-:let-over-lambda)
+:parenscript :trivial-shell :opticl :mito)
   :components ((:module "src"
+			:serial t
 			:components
-			((:file "riley")
-			 (:file "data")
-			 (:file "latex")
-			 (:file "pages"))))
+			((:file "riley"))))
   :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames
