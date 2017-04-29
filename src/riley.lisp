@@ -190,7 +190,7 @@
 				      "-"
 				      (db-show-name (invoice-show  current-invoice))
 				      "-"
-				     
+				     (subseq image-name 0 4)
 				      ".jpg")))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
@@ -235,7 +235,7 @@
 		      :show-name showname
 		      :contact-name contact
 		      :root-dir root-dir
-		      :pdf-location (concatenate 'string root-dir "pdf/" showname "-" setname ".pdf"))
+		      :pdf-location (directory-safe (concatenate 'string root-dir "pdf/" showname "-" setname ".pdf")))
   (redirect "/dashboard")))
 
 ;;;Basic function to create a new show		      
