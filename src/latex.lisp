@@ -1,5 +1,5 @@
 ;;;Latex constants---------------------------------------------------
-(in-package :riley)
+
 (defparameter header-name "\\dotfill \\textsc{Ordered by:} ")
 (defparameter header-set "\\dotfill \\textsc{Set:} ")
 (defparameter header-show "\\dotfill \\textsc{Show:} ")

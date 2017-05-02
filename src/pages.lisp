@@ -237,10 +237,10 @@
 					 "Rotate")
 				    (:ul :id "dropdown1" :class "dropdown-content"
 					 (:li (:a :href (format nil "rotate-image?image=~a"
-								 ,image)
+								,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
 					 (:li (:a :href (format nil "rotate-image?image=~a"
-								 ,image)
+								,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_right") "Rotate Right")))
 				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))

@@ -210,7 +210,7 @@
 
 (defun start-server (port)
   (start (make-instance 'easy-acceptor :port port))
-  (mito:connect-toplevel :sqlite3 :database-name "riley"))
+  (mito:connect-toplevel :sqlite3 :database-name "riley.db"))
 
 
 
@@ -335,11 +335,13 @@
 	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
     
    
-	(setf (invoice-item-list invoice) (remove-if #'(lambda (x)
-							 (and (string= (db-item-desc x) item)
-							      (string= (db-item-price x) item-price)
-							      (string= (db-item-qty x) item-quantity)))	        
-						     (invoice-item-list invoice)))
+    (mito:delete-dao  (find-item-db
+		       :description item
+		       :quantity item-quantity
+		       :price item-price
+		       :invoice (mito:find-dao 'invoice-db
+						:show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
+						:set-name (db-set-name invoice))))
     (redirect "/setthemcookies")))
 
 (defmacro web-math (&key func a b)
