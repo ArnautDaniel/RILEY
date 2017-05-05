@@ -74,6 +74,18 @@
 	     :col-type :text))
   (:metaclass mito:dao-table-class))
 
+(defclass partial-db ()
+  ((return-qty :initarg :return-qty
+	       :accessor partial-return-qty
+	       :col-type :text)
+   (return-date :initarg :return-date
+		:accessor partial-return-date
+		:col-type :text)
+   (item :col-type item-db
+	 :initarg :item-db
+	 :accessor db-partial-item))
+  (:metaclass mito:dao-table-class))
+
 (defun invoice-item-list (invoice)
   (mito:retrieve-dao 'item-db :invoice invoice))
 
