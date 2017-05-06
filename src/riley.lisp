@@ -103,9 +103,9 @@
 
 (defun register-user (&key username password)
   (mito:create-dao 'user-db 
-		       :name username
-		       :password password
-		       :rank "user"))
+		   :name username
+		   :password password
+		   :rank "user"))
 
 (defun add-show-to-db (&key name contact)
   (mito:create-dao 'show-db :name name :contact contact :phone-number "000"))
@@ -121,7 +121,7 @@
   (if (not (mito:find-dao 'show-db :name show-name))
       (add-show-to-db :name show-name
 		      :contact contact-name))
-      (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name) :root-dir root-dir :pdf-location (subseq pdf-location 71)))
+  (mito:create-dao 'invoice-db :set-name set-name :date-out "000" :show-db (mito:find-dao 'show-db :name show-name) :root-dir root-dir :pdf-location (subseq pdf-location 71)))
 
 (defun find-invoice-from-cookie (id)
   (find-invoice-db :id (parse-integer id)))
@@ -202,7 +202,7 @@
 				      "-"
 				      (db-show-name (invoice-show  current-invoice))
 				      "-"
-				     (subseq image-name 0 4)
+				      (subseq image-name 0 4)
 				      ".jpg")))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
@@ -212,7 +212,7 @@
 					  :name (directory-safe new-img-name)))
 	     (img (read-jpeg-file new-img-path)))
 	(write-jpeg-file new-img-path (resize-image img 1200 1600))))
-   
+    
     (delete-file (make-pathname :directory temp-image-directory
 				:name image-name))))
 
@@ -222,7 +222,8 @@
 
 (defun start-server (port)
   (start (make-instance 'easy-acceptor :port port))
-  (mito:connect-toplevel :sqlite3 :database-name "riley.db"))
+  (mito:connect-toplevel :sqlite3 :database-name "riley.db")
+  (mapcar #'mito:ensure-table-exists '(item-db invoice-db show-db user-db partial-db)))
 
 
 
@@ -243,18 +244,18 @@
 				"/" (directory-safe setname) "/")))
     (ensure-directories-exist root-dir)
     (register-invoice 
-		      :set-name setname
-		      :show-name showname
-		      :contact-name contact
-		      :root-dir root-dir
-		      :pdf-location (directory-safe (concatenate 'string root-dir "pdf/" showname "-" setname ".pdf")))
-  (redirect "/dashboard")))
+     :set-name setname
+     :show-name showname
+     :contact-name contact
+     :root-dir root-dir
+     :pdf-location (directory-safe (concatenate 'string root-dir "pdf/" showname "-" setname ".pdf")))
+    (redirect "/dashboard")))
 
 ;;;Basic function to create a new show		      
 (define-easy-handler (write-order :uri "/write-order") ()
   (standard-page (:title "Write Order")
-		 (:navbar (test-navbar))
-		 (standard-order-intro)))
+    (:navbar (test-navbar))
+    (standard-order-intro)))
 
 ;;;Adds a message to the global message list
 ;;;This can be a notification for a new order/show/invoice
@@ -265,9 +266,7 @@
   (set-cookie "current-invoice" :value "none")
   (let ((username (cookie-in "current-user")))
     (if (not (or (string= username "login") (string= username "")))
-	(standard-page (:title "Dashboard")
-		       (:navbar  (test-navbar))
-		       (standard-dashboard :messages '()))
+        (redirect "/checkinlist")
 	(redirect "/login"))))
 
 ;;;This function needs to be redone.  Currently it takes the post parameters of the item
@@ -297,13 +296,13 @@
 		     if (equal (car post-parameter) "picture-batch")
 		     collect post-parameter)))
     (standard-page (:title "Picture Batch")
-		   (mapc #'(lambda (x)
-			     (rename-file (second x)
-					  (concatenate 'string "/tmp/"
-						       (third x)))
-			     (move-image-to-invoice-dir x))
-			 
-			 whatever)))
+      (mapc #'(lambda (x)
+		(rename-file (second x)
+			     (concatenate 'string "/tmp/"
+					  (third x)))
+		(move-image-to-invoice-dir x))
+	    
+	    whatever)))
   (redirect "/setthemcookies"))
 
 ;;;Current solution to being able to refresh pages without putting data in the URI
@@ -326,7 +325,7 @@
 	 (image (hunchentoot:post-parameter "image-data"))
 	 (set-name (db-set-name invoice))
 	 (show-name (db-show-name (invoice-show invoice))))
-   
+    
     (mito:create-dao 'item-db :description description
 		     :quantity qty
 		     :price price
@@ -346,14 +345,14 @@
 	 (item-price (hunchentoot:post-parameter "item-price"))
 	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
     
-   
+    
     (mito:delete-dao  (find-item-db
 		       :description item
 		       :quantity item-quantity
 		       :price item-price
 		       :invoice (mito:find-dao 'invoice-db
-						:show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
-						:set-name (db-set-name invoice))))
+					       :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
+					       :set-name (db-set-name invoice))))
     (redirect "/setthemcookies")))
 
 (defmacro web-math (&key func a b)
@@ -369,32 +368,44 @@
 	    :a a
 	    :b b))
 
+(defun concat-rtn-qty (item)
+  (let* ((item-id (mito:object-id item))
+	 (partial-list (mito:retrieve-dao 'partial-db :item-id item-id)))
+    (if (not (null partial-list))
+	(reduce #'web-math-add (mapcar #'partial-return-qty partial-list))
+	"0")))
+
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
   (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
 	 (invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
-	 (item-r (first (remove-if-not #'(lambda (x)
-					   (and (string= desc (db-item-desc x))
-						(string= price (db-item-price x))
-						(string= qty (db-item-qty x))))
-				       (invoice-item-list invoice)))))
-    (cond
-      ((string= (db-item-qty item-r) (web-math-add (item-returned-qty item-r) rtn))
-       (setf (item-returned-on item-r)
-	     (current-date-string)))
-      (t
-       (setf (item-returned-qty item-r) (web-math-add (item-returned-qty item-r) rtn))
-       (add-note-item item-r
-		      (current-date-string)
-		      rtn))))
+	 (item-r (find-item-db :price price :quantity qty :description desc  :invoice (mito:find-dao 'invoice-db
+												     :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
+												     :set-name (db-set-name invoice))))
+	 (item-cur-part (mito:retrieve-dao 'partial-db :item item-r)))
+    
+    (if (not (search-cur item-cur-part))
+	(mito:create-dao 'partial-db :return-qty rtn
+			 :return-date (current-date-string)
+			 :item-db item-r)
+	(let* ((partial-item (mito:find-dao 'partial-db :return-date (current-date-string)
+					    :item item-r))
+	       (partial-item-qty (partial-return-qty partial-item)))
+	  (if (string>= (web-math-add rtn partial-item-qty) (db-item-qty item-r))
+	      (and (setf (slot-value item-r 'returned-on) (current-date-string))
+		   (mito:save-dao item-r))
+	      (and (setf (slot-value partial-item 'return-qty) (web-math-add rtn partial-item-qty))									   (mito:save-dao partial-item))))))
   (redirect "/check-in-set"))
 
-
+(defun search-cur (item-cur-part)
+  (remove-if-not #'(lambda (x)
+		     (and (string= (current-date-string) (partial-return-date x))))
+		 item-cur-part))
 ;;;Standard check in page that displays a table of shows with invoices
 
 (define-easy-handler (checkinlist :uri "/checkinlist") ()
   (standard-page (:title "Check in list")
-		 (:navbar (test-navbar))
-		 (standard-check-in-showlist)))
+    (:navbar (test-navbar))
+    (standard-check-in-showlist)))
 
 ;;;Required to get around the refresh problem.  Will need to expand solution
 (define-easy-handler (check-in-set-pre :uri "/check-in-set-pre") (showname setname)
@@ -411,12 +422,12 @@
 	 (showname (db-show-name (invoice-show invoice)))
 	 (setname (db-set-name invoice)))
     (standard-page (:title (concatenate 'string "Check in: " showname "-" setname))
-		   (:navbar (test-navbar))
-		   (standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
-					      :set (fmt "~A" (escape-string setname))
-					      :contact (fmt "~A" (escape-string (db-contact (invoice-show invoice))))
-					      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice))))
-		   (standard-check-in :invoice invoice))))
+      (:navbar (test-navbar))
+      (standard-invoice-writing  :show  (fmt "~A" (escape-string showname))
+				 :set (fmt "~A" (escape-string setname))
+				 :contact (fmt "~A" (escape-string (db-contact (invoice-show invoice))))
+				 :pic-num (fmt "~A" (escape-string (count-pics-from-invoice))))
+      (standard-check-in :invoice invoice))))
 
 
 ;;;Provides all the abstraction for generating a pdf from an invoice
@@ -448,19 +459,19 @@
 					  change-pic-cookie)))
     (set-cookie "current-picture" :value  "")
     (standard-page (:title "Order Writeup")
-		   (:navbar (test-navbar))
-		   (standard-three-nine-hook
-		    (:bodythree
-		     ((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
-						:set (fmt "~A" (escape-string setname))
-						:contact (fmt "~A" (escape-string contact))
-						:pic-num (fmt "~A" (escape-string (count-pics-from-invoice))))
-		      (standard-picture-upload)))
-		    
-		    (standard-item-writeup :image (first images-filtered)
-					   :full-images (rest images-filtered))
-		    (standard-item-list-table :invoice invoice)
-		    (standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
+      (:navbar (test-navbar))
+      (standard-three-nine-hook
+	  (:bodythree
+	   ((standard-invoice-writing :show  (fmt "~A" (escape-string showname))
+				      :set (fmt "~A" (escape-string setname))
+				      :contact (fmt "~A" (escape-string contact))
+				      :pic-num (fmt "~A" (escape-string (count-pics-from-invoice))))
+	    (standard-picture-upload)))
+	
+	(standard-item-writeup :image (first images-filtered)
+			       :full-images (rest images-filtered))
+	(standard-item-list-table :invoice invoice)
+	(standard-pdf-iframe :pdf (invoice-pdf-location invoice))))))
 
 
 (defun sort-item-list (itemlist pic-need)
@@ -485,9 +496,9 @@
 
 ;;;Expects an invoice with the string showname-setname
 (defun count-pics-from-invoice ()
-      (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
-	     (invoice-pathname (invoice-root-dir invoice)))
-	(concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname))) " pictures on order")))
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (invoice-pathname (invoice-root-dir invoice)))
+    (concatenate 'string (write-to-string (filtered-length (cl-fad:list-directory invoice-pathname))) " pictures on order")))
 
 (defun filtered-length (directory-list)
   (length (remove-if #'(lambda (x)
@@ -507,7 +518,7 @@
 
 (define-easy-handler (home :uri "/") ()
   (standard-page (:title "RILEY Inventory System")
-		 (redirect "/login")))
+    (redirect "/login")))
 
 (define-easy-handler (check-login :uri "/check-login") ()
   (let
@@ -532,7 +543,7 @@
 
 (define-easy-handler (login :uri "/login") ()
   (standard-page (:title "Login")
-		 (standard-login)))
+    (standard-login)))
 
 (define-easy-handler (rotate-image :uri "/rotate-image") (image)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
@@ -573,12 +584,7 @@
 	     ,@navbar		   	       
 	     (:div :class "container"
 		   (:div :class "section"
-			 ,@body
-			 (:footer :class "page-footer"
-				  (:div :class "container"
-					(:div :class "row"
-					      
-					      (:h5 :class "center white-text" "Made with Powerful Parenthesis"))))))))))
+			 ,@body ))))))
 
 
 (defmacro standard-three-nine-hook ((&key bodythree) &body bodynine)
@@ -634,7 +640,7 @@
 						   (:i :class "material-icons right" "send")))))))
 	   
 	   (:div :class "col m6 s12"
-		 (:div :class "card teal"
+		 (:div :class "card blue-grey darken-1"
 		       (:div :class "card-content white-text"
 			     
 			     
@@ -768,10 +774,10 @@
 					 "Rotate")
 				    (:ul :id "dropdown1" :class "dropdown-content"
 					 (:li (:a :href (format nil "rotate-image?image=~a"
-								 ,image)
+								,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
 					 (:li (:a :href (format nil "rotate-image?image=~a"
-								 ,image)
+								,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_right") "Rotate Right")))
 				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))
@@ -834,7 +840,7 @@
 				
 				
 				(:div :class "chip black-text"  (fmt "Set: ~A" (escape-string (db-set-name invoice))))
-				;(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string ( invoice))))
+					;(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string ( invoice))))
 				(:div :class "card-action"
 				      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (db-show-name (invoice-show  invoice))) (web-safep (db-set-name invoice)))
 					  :class "btn-flat waves-effect red-text  text-darken-4" "Check-in")
@@ -912,7 +918,7 @@
 				      (:span 
 				       (:i :class "material-icons" "attach_money") (fmt "~A" (escape-string (db-item-price item)))					    
 				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A/~A &emsp;"
-																 (escape-string (item-returned-qty item))
+																 (escape-string (concat-rtn-qty item))
 																 (escape-string (db-item-qty item))))))
 				
 				(:div :class "card-action"
@@ -925,7 +931,7 @@
 				       (:input :type "hidden" :name "item-price" :id "item-price"
 					       :value (db-item-price item))
 				       (:input :type "hidden" :name "item-desc" :id "item-desc"
-					       :value (db-item-desc item))
+					       :value (db-item-desc item)) 
 				       (:input :type "hidden" :name "item-qty" :id "item-qty"
 					       :value (db-item-qty item))
 				       (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))			        
@@ -937,8 +943,10 @@
 				      (:form :action (concatenate 'string "/partial-check-in?qty=" (db-item-qty item) "&desc=" (db-item-desc item) "&price=" (db-item-price item))
 					     :method "POST"
 					     (:p :class "range-field"
-						 (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (web-math-subtract (db-item-qty item) (item-returned-qty item)) :oninput "this.form.rangedName.value=this.value"))
-					     (:input :class "left" :type "number" :name "rangedName" :min "0" :max (web-math-subtract (db-item-qty item) (item-returned-qty item)):value (web-math-subtract (db-item-qty item) (item-returned-qty item)) :oninput "this.form.ranged.value=this.value")
+						 (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (web-math-subtract (db-item-qty item) (concat-rtn-qty item))
+							   :value (web-math-subtract (db-item-qty item) (concat-rtn-qty item)) :oninput "this.form.rangedName.value=this.value"))
+					     (:input :class "left" :type "number" :name "rangedName" :min "0" :max (web-math-subtract (db-item-qty item) (concat-rtn-qty item))
+						     :value (web-math-subtract (db-item-qty item) (concat-rtn-qty item)) :oninput "this.form.ranged.value=this.value")
 					     
 					     (:button :type "submit"  :class "right red darken-4 btn-floating" (:i :class "material-icons" "arrow_downward")))))))))))
      
@@ -1113,7 +1121,11 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
 	       "}{"
 	       (db-item-qty b) "}{"
 	       (db-item-price  b) "}{"	       
-	       ""		 
+	       (if (and (mito:retrieve-dao 'partial-db :item b)
+			(string= "" (item-returned-on b)))
+		   (let ((c (first (mito:retrieve-dao 'partial-db :item b))))
+		     (concatenate 'string (partial-return-qty c) " RTN'D " (partial-return-date c)))
+		   "")
 	       "}{"
 	       (item-returned-on b)
 	       "}"))
