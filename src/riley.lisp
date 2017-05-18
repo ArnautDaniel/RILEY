@@ -145,7 +145,10 @@
 (defun directory-safe (stg)
   (remove-if #'(lambda (x)
 		 (or (char= x #\ )
-		     (char= x #\')))
+		     (char= x #\')
+		    
+		     (char= x #\")
+		     (char= x #\!)))
 	     stg))
 ;;;If an item already has a return date remove it from the check-in list
 ;;;before passing the data to the check-in page
@@ -202,7 +205,7 @@
 				      "-"
 				      (db-show-name (invoice-show  current-invoice))
 				      "-"
-				      (subseq image-name 0 4)
+				      (subseq image-name 0 8)
 				      ".jpg")))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
@@ -449,9 +452,9 @@
 ;;;Need to rewrite so defintions are in the URL for reloading to work
 (define-easy-handler (setthemcookies :uri "/setthemcookies") ()
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
-	 (showname (db-show-name (invoice-show  invoice)))
+	 (showname (db-show-name (invoice-show invoice)))
 	 (setname (db-set-name invoice))
-	 (contact (db-contact (invoice-show  invoice)))
+	 (contact (db-contact (invoice-show invoice)))
 	 (change-pic-cookie (cookie-in "current-picture"))
 	 (images (prepare-for-table (cl-fad:list-directory
 				     (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
@@ -574,8 +577,9 @@
 		    :rel "stylesheet"
 		    :href "css/materialize.min.css")
 	     (:script :src "js/jquery.js")
-					;(:script :src "js/ajax-item.js")
+	     ;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
+	     (:script :src "js/jQueryRotate.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
 	     (:script :src "plugins/jq-input.js")
 	     (:title ,title))
@@ -731,7 +735,7 @@
 			     (if (null ,image)
 				 (htm (:div :class "card-title" (:p :class "center" "No pictures available")))
 				 (htm  (:div :class "card-image"
-					     (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (string (gensym)))) :class  "materialboxed responsive-img" :name ,image))))))
+					     (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (write-to-string (random 100)))) :class  "materialboxed responsive-img" :name ,image))))))
 		 (:div :class "col s12 m6 l6"
 		       
 		       (:div :class "card" :id "box-picture"
@@ -772,9 +776,9 @@
 					 :data-activates "dropdown1"
 					 :data-beloworigin "true"
 					 "Rotate")
+				    
 				    (:ul :id "dropdown1" :class "dropdown-content"
-					 (:li (:a :href (format nil "rotate-image?image=~a"
-								,image)
+					 (:li (:a :href "#"
 						  :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
 					 (:li (:a :href (format nil "rotate-image?image=~a"
 								,image)
@@ -839,11 +843,11 @@
 							    (fmt "~A" (escape-string (db-show-name (invoice-show  invoice))))))
 				
 				
-				(:div :class "chip black-text"  (fmt "Set: ~A" (escape-string (db-set-name invoice))))
+				(:div :class "chip black-text"  (fmt "~A" (escape-string (db-set-name invoice))))
 					;(:div :class "chip black-text" (fmt "Contact: ~A" (escape-string ( invoice))))
 				(:div :class "card-action"
 				      (:a :href (format nil "check-in-set-pre?showname=~a&setname=~a" (web-safep (db-show-name (invoice-show  invoice))) (web-safep (db-set-name invoice)))
-					  :class "btn-flat waves-effect red-text  text-darken-4" "Check-in")
+					  :class "btn-flat waves-effect red-text  text-darken-4" "Check")
 				      (:a :href (format nil "pre-set-cookies?showname=~a&setname=~a" (web-safep (db-show-name (invoice-show invoice))) (web-safep (db-set-name invoice)))
 					  :class "btn-flat waves-effect red-text text-darken-4" "Invoice"))))))))))
 
@@ -979,7 +983,7 @@
      (:iframe :id "iframepdf"
 	      :height "600"
 	      :width "100%"
-	      :src (concatenate 'string (web-safep ,pdf) "?name="))))
+	      :src (concatenate 'string (web-safep ,pdf) "?name=" (write-to-string (random 100))))))
 
 (defmacro standard-invoice-writing (&key show set contact pic-num)
   `(with-html-output (*standard-output* nil :indent t)
