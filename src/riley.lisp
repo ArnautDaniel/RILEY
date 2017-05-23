@@ -205,7 +205,7 @@
 				      "-"
 				      (db-show-name (invoice-show  current-invoice))
 				      "-"
-				      (subseq image-name 0 8)
+				      image-name
 				      ".jpg")))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
@@ -758,6 +758,7 @@
 					  (:label :for "inputPrice" :class "black-text"  "Price")
 					  (:input :type "number" 
 						  :id "input-item-price"
+						  :step "0.01"
 						  :name "input-item-price"
 						  :required "required"))
 				    (:div :class "input-field col s12 m6 l6"
@@ -776,7 +777,6 @@
 					 :data-activates "dropdown1"
 					 :data-beloworigin "true"
 					 "Rotate")
-				    
 				    (:ul :id "dropdown1" :class "dropdown-content"
 					 (:li (:a :href "#"
 						  :class "red-text" (:i :class "material-icons" "rotate_left") "Rotate Left"))
@@ -1023,7 +1023,7 @@
 ;;;Takes an invoice and root-dir
 (defparameter tail-conf "
 \\par
-{\\scriptsize \\begin{singlespace} It is agreed that \\textsc{Lessee} assumes all liability and responsibility for the item(s) listed above.  When item(s) have been accepted by \\textsc{Lessee} (as evidenced by \\textsc{Lessee’s} signature below), and while in the custody and possession of \\textsc{Lessee}, its employees, agents, owners, directors and officers and any other person or entity to whom the item(s) is entrusted by \\textsc{Lessee}, or assigns.  Liability extends to the full replacement cost or repair, in Lessor’s sole discretion.  Further, Lessee assumes full responsibility for any liability arising because of the use of the item(s) during the term of the lease and until item(s) is returned to the custody and control of Lessor (as evidenced by the written acknowledgement by Lessor). Further, to the extent permitted by law, the \\textsc{Lessee} agrees to protect, indemnify, defend and hold harmless Lessor, its directors, officers, agents, shareholders, and employees, against all claims or damages to people or property and costs (including reasonable attorney’s fees), up to Lessor’s pro-rata share of the item(s), arising out of or connected with the operation of \\textsc{Lessee’s} activities with respect to the item(s), including damage caused by inadequate maintenance of the item(s), use of the item(s), or a part thereof, by any customer, any guest, invitee, or by any agent of the \\textsc{Lessee}. Replacement value of all items (unless otherwise noted) equals (10X) first week rate. \\end{singlespace}}
+{\\scriptsize \\begin{singlespace} It is agreed that \\textsc{Lessee} assumes all liability and responsibility for the item(s) listed below.  When item(s) have been accepted by \\textsc{Lessee} (as evidenced by \\textsc{Lessee’s} signature below), and while in the custody and possession of \\textsc{Lessee}, its employees, agents, owners, directors and officers and any other person or entity to whom the item(s) is entrusted by \\textsc{Lessee}, or assigns.  Liability extends to the full replacement cost or repair, in Lessor’s sole discretion.  Further, Lessee assumes full responsibility for any liability arising because of the use of the item(s) during the term of the lease and until item(s) is returned to the custody and control of Lessor (as evidenced by the written acknowledgement by Lessor). Further, to the extent permitted by law, the \\textsc{Lessee} agrees to protect, indemnify, defend and hold harmless Lessor, its directors, officers, agents, shareholders, and employees, against all claims or damages to people or property and costs (including reasonable attorney’s fees), up to Lessor’s pro-rata share of the item(s), arising out of or connected with the operation of \\textsc{Lessee’s} activities with respect to the item(s), including damage caused by inadequate maintenance of the item(s), use of the item(s), or a part thereof, by any customer, any guest, invitee, or by any agent of the \\textsc{Lessee}. Replacement value of all items (unless otherwise noted) equals (10X) first week rate. \\end{singlespace}}
 
 {\\color{red} \\textsc{Signature}}\\hspace{0.5cm} \\makebox[3in]{\\hrulefill} \\hspace{0.5cm} \\textsc{Date}\\hspace{0.5cm} \\makebox[1in]{\\hrulefill} \\\\
 \\textsc{Print}\\hspace{1.25cm} \\makebox[3in]{\\hrulefill}
@@ -1042,16 +1042,16 @@
 \\usepackage{expl3}
 ")
 
-(defparameter heading-conf "
+(defparameter heading-conf "\\includegraphics[scale=.33]{caps}
 \\hfil{\\huge\\color{red}{\\textsc{Checkout Sheet}}}\\hfil
 % \\bigskip\\break % Whitespace
 \\break
 \\hrule % Horizontal line
 
-000 E Atlanta Drive \\hfill \\emph{Mobile:} (000) 000-0000 \\\\
-Ste. 000 \\hfill{ \\emph{Office:} (000) 000-0000} \\\\
+675 Metropolitan Parkway SW \\hfill \\emph{Mobile:} (661) 000-0000 \\\\
+Suite 5121 \\hfill{ \\emph{Office:} (470) 000-0000} \\\\
 % Your address and contact information
-Norfolk, Georgia 00000 \\hfill anon@anon.com
+Atlanta, Georgia 30310 \\hfill caps@capsga.com
 \\\\ \\\\
 {\\bf Invoice To:} \\\\ ")
 
@@ -1079,7 +1079,7 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       (princ (concatenate 'string
 			  "\\graphicspath{ {"
 			  (invoice-root-dir invoice)
-			  "webimg/}}") s)
+			  "webimg/}{/home/silver/texmf/tex/latex/invoice/}}") s)
       (princ begin-document s)
       (fresh-line s)
       (princ heading-conf s)
@@ -1096,13 +1096,14 @@ Norfolk, Georgia 00000 \\hfill anon@anon.com
       (princ date-header s)
       (princ rental-period s)
       (fresh-line s)
+      (princ tail-conf s)
       (princ begin-table s)
       (fresh-line s)
       (mapc (lambda (b) (princ (format-description b) s)
 		    (fresh-line s)) (invoice-item-list invoice))
       (princ end-table s)
       (fresh-line s)
-      (princ tail-conf s)
+     
       (princ begin-img-table s)
       (mapc (lambda (b) (princ (format-picture b) s)
 		    (fresh-line s)
