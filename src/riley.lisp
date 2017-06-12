@@ -62,6 +62,15 @@
 		:col-type :text))
   (:metaclass mito:dao-table-class))
 
+(defclass multi-pic ()
+  ((item :col-type item-db
+	 :initarg :item-db
+	 :accessor db-multi-item)
+   (picture :initarg :picture
+	    :accessor multi-picture
+	    :col-type :text))
+  (:metaclass mito:dao-table-class))
+
 (defclass user-db ()
   ((name :initarg :name
 	 :accessor db-user-name
@@ -146,7 +155,7 @@
   (remove-if #'(lambda (x)
 		 (or (char= x #\ )
 		     (char= x #\')
-		    
+		     
 		     (char= x #\")
 		     (char= x #\!)))
 	     stg))
@@ -226,7 +235,7 @@
 (defun start-server (port)
   (start (make-instance 'easy-acceptor :port port))
   (mito:connect-toplevel :sqlite3 :database-name "riley.db")
-  (mapcar #'mito:ensure-table-exists '(item-db invoice-db show-db user-db partial-db)))
+  (mapcar #'mito:ensure-table-exists '(item-db invoice-db show-db user-db partial-db multi-pic)))
 
 
 
@@ -377,6 +386,16 @@
     (if (not (null partial-list))
 	(reduce #'web-math-add (mapcar #'partial-return-qty partial-list))
 	"0")))
+
+(define-easy-handler (multi-pic-add :uri "/multi-pic-add") (qty desc price pic)
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (item-r (find-item-db :price price :quantity qty :description desc :invoice (mito:find-dao 'invoice-db
+												    :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
+												    :set-name (db-set-name invoice)))))
+    (mito:create-dao 'multi-pic
+		     :item-db item-r
+		     :picture pic)
+    (redirect "/setthemcookies")))
 
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
   (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
@@ -577,7 +596,7 @@
 		    :rel "stylesheet"
 		    :href "css/materialize.min.css")
 	     (:script :src "js/jquery.js")
-	     ;(:script :src "js/ajax-item.js")
+					;(:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
 	     (:script :src "js/jQueryRotate.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
@@ -786,15 +805,9 @@
 				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))
      
-     
-					;(:script :src "plugins/custom/ajax-item.js")
-
      (:div :id "myModal" :class "modal bottom-sheet" 
-	   
 	   (:div :class "modal-content"
-		 
 		 (:h4 "Switch Pictures")
-		 
 		 (dolist (img ,full-images)
 		   (htm
 		    (:div :class "col s12 m3 l3"
@@ -853,52 +866,52 @@
 
 (defmacro standard-item-list-table (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
+     
      (:div :class "row"
 	   (:script :src "plugins/scrollfire.js")
-	   (:div :class "input-field col s12 l4 m4"
+	   (:div :class "input-field"
 		 (:label :for "myInput" :class "black-text" "Search")
 		 (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
 	   (:script :src "plugins/search.js")
+
+	   
 	   (:div :id "itemlist"
-		 (:ul :id "myUL"
-		      (dolist (item (invoice-item-list ,invoice))
-			(htm
-			 (:li
-			  (:div :class "col s12 m4 l4"
-				(:div :class "card medium blue-grey"
-				      (:div :class "card-image"
-					    (:img :src (item-picture item) :width "25%" :height "25%" :class "materialboxed responsive-img" :data-caption (db-item-desc item))
-					    (:span :class "card-title truncate"
-						   :style "font-size:20px; text-shadow:-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;" ;;;Set correct fontsize and give a blackoutline to help readability
-						   (fmt "~A" (escape-string (db-item-desc item)))))
-				      (:div :class "card-content"
-					    
-					    (:span
-					     
-					     (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
-					     (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
-				      (:div :class "card-action"
-					    (:form :class "form-inline"
-						   :action "/removeitem"
-						   :method "POST"
-						   :id "item-table"
-						   (:input :type "hidden" :value (db-item-desc item)
-							   :name "item" :id "item")
-						   (:input :type "hidden" :value (db-item-price item)
-							   :name "item-price" :id "item-price")
-						   (:input :type "hidden" :value (db-item-qty item)
-							   :name "item-quantity" :id "item-quantity")
-						   (:input :type "hidden" :value ,invoice
-							   :name "invoice" :id "invoice")
-						   (if (string= (item-returned-on item) "")
-						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
-						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
-								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-						   (:a :href "#" :class "btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy"))))))))))))))
-;;;Force remove option may be necessary due to this
-
-
-
+		 (:ul :id "myUL"     
+		 (dolist (item (invoice-item-list ,invoice))
+		   (htm
+		    (:li
+		     (:div :class "col l3 m4 s6"
+			   (:div :class "card" :data-indicators "true"
+				
+				 (:div :class "card-image" (:div :class "carousel" (:a :class "carousel-item" :href "#one!" (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item)))))
+				
+				(:div :class "card-content"
+				      (:span :class "card-title truncate"
+					     (fmt "~A" (escape-string (db-item-desc item))))
+				      (:span
+				       (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
+				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
+				(:div :class "card-action"
+				      (:form :class "form-inline"
+					     :action "/removeitem"
+					     :method "POST"
+					     :id (db-item-desc item)
+					     (:input :type "hidden" :value (db-item-desc item)
+						     :name "item" :id "item")
+					     (:input :type "hidden" :value (db-item-price item)
+						     :name "item-price" :id "item-price")
+					     (:input :type "hidden" :value (db-item-qty item)
+						     :name "item-quantity" :id "item-quantity")
+					     (:input :type "hidden" :value ,invoice
+						     :name "invoice" :id "invoice")
+					     (if (string= (item-returned-on item) "")
+						 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
+						 (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
+							       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
+					     (:a :href "#" :class "btn-floating waves-effect weaves-light" :onclick "modal-add.js" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
+	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
+	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
+	   (:script "$('.carousel.carousel-slider').carousel({fullWidth: false});"))))
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
@@ -948,7 +961,7 @@
 					     :method "POST"
 					     (:p :class "range-field"
 						 (:input :id "ranged" :name "ranged" :type "range" :min "0" :max (web-math-subtract (db-item-qty item) (concat-rtn-qty item))
-							   :value (web-math-subtract (db-item-qty item) (concat-rtn-qty item)) :oninput "this.form.rangedName.value=this.value"))
+							 :value (web-math-subtract (db-item-qty item) (concat-rtn-qty item)) :oninput "this.form.rangedName.value=this.value"))
 					     (:input :class "left" :type "number" :name "rangedName" :min "0" :max (web-math-subtract (db-item-qty item) (concat-rtn-qty item))
 						     :value (web-math-subtract (db-item-qty item) (concat-rtn-qty item)) :oninput "this.form.ranged.value=this.value")
 					     
@@ -1103,7 +1116,7 @@ Atlanta, Georgia 30310 \\hfill caps@capsga.com
 		    (fresh-line s)) (invoice-item-list invoice))
       (princ end-table s)
       (fresh-line s)
-     
+      
       (princ begin-img-table s)
       (mapc (lambda (b) (princ (format-picture b) s)
 		    (fresh-line s)
