@@ -596,9 +596,11 @@
 		    :rel "stylesheet"
 		    :href "css/materialize.min.css")
 	     (:script :src "js/jquery.js")
-					;(:script :src "js/ajax-item.js")
+	     (:script :src "js/ajax-item.js")
 	     (:script :src "js/materialize.min.js")
 	     (:script :src "js/jQueryRotate.js")
+	     (:script :src "js/handlebars.js")
+	     (:script :src "js/removeitem.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
 	     (:script :src "plugins/jq-input.js")
 	     (:title ,title))
@@ -754,9 +756,47 @@
 			     (if (null ,image)
 				 (htm (:div :class "card-title" (:p :class "center" "No pictures available")))
 				 (htm  (:div :class "card-image"
-					     (:img :id "input-picture" :src (escape-string (concatenate 'string ,image "?gensym=" (write-to-string (random 100)))) :class  "materialboxed responsive-img" :name ,image))))))
+					     (:img :id "input-picture" :src (escape-string (concatenate 'string ,image)) :class  "materialboxed responsive-img" :name ,image))))))
 		 (:div :class "col s12 m6 l6"
-		       
+		       (:script :id "new-pic-template" :type "text/x-handlebars-template"
+				"<li> <div class='col l3 m4 s6'>
+<div class='card-image'>
+<div class='carousel'>
+<a class='carousel-item' href='#one!'>
+<img src={{imgname}} class='responsive-img materialboxed' data-caption={{caption}} />
+</a>
+</div>
+</div>
+<div class='card-content'>
+<span class='card-title truncate'> {{caption}}
+</span>
+<span
+<i class='material-icons'> attach_money
+</i> {{price}} &emsp;
+<a href='#' class='right black-text'>
+            <i class='material-icons'>all_inclusive
+            </i> {{quantity}}
+          </a>
+        </span>
+      </div>
+      <div class='card-action'>
+        <form class='form-inline' action='/removeitem' method='POST' id='removebutton'>
+          <input type='hidden' value={{caption}} name='item' id='item' />
+          <input type='hidden' value={{price}} name='item-price' id='item-price' />
+          <input type='hidden' value={{quantity}} name='item-quantity' id='item-quantity' />
+          <input type='hidden' value='' name='invoice' id='invoice' />
+<button type='submit' class='red darken-4 btn btn-default btn-sm btn-danger'>Remove
+</button>
+          <a href='#' class='btn-floating waves-effect weaves-light' onclick='modal-add.js' data-target='myModal'>
+            <i class='material-icons'>content_copy
+            </i>
+          </a>
+        </form>
+      </div>
+    </div>
+  </div>
+</li>")
+		      
 		       (:div :class "card" :id "box-picture"
 			     
 			     
@@ -789,7 +829,7 @@
 						  :required "required"))
 				    (:input :type "hidden" :id "image-data" :name "image-data" :value ,image)
 				    
-				    (:button :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
+				    (:button :onclick "additem()" :type "submit" :class "red darken-4 btn waves-effect waves-light" "Add")
 				    (:a  :class "red  dropdown-button darken-4 btn waves-effect waves-light"
 					 
 					 :href "#"
@@ -895,6 +935,8 @@
 				      (:form :class "form-inline"
 					     :action "/removeitem"
 					     :method "POST"
+					     :onclick (concatenate 'string "removeitem(\"" (db-item-desc item) "\")")
+					   
 					     :id (db-item-desc item)
 					     (:input :type "hidden" :value (db-item-desc item)
 						     :name "item" :id "item")
