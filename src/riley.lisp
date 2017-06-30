@@ -116,6 +116,9 @@
 		   :password password
 		   :rank "user"))
 
+(defun more-than-one (item)
+  (mito:retrieve-dao 'multi-pic :item item))
+
 (defun add-show-to-db (&key name contact)
   (mito:create-dao 'show-db :name name :contact contact :phone-number "000"))
 
@@ -601,6 +604,7 @@
 	     (:script :src "js/jQueryRotate.js")
 	     (:script :src "js/handlebars.js")
 	     (:script :src "js/removeitem.js")
+	     (:script :src "js/modal-add.js")
 	     (:link :href "https://fonts.googleapis.com/icon?family=Material+Icons" :rel "stylesheet")
 	     (:script :src "plugins/jq-input.js")
 	     (:title ,title))
@@ -796,7 +800,7 @@
     </div>
   </div>
 </li>")
-		      
+		       
 		       (:div :class "card" :id "box-picture"
 			     
 			     
@@ -845,19 +849,23 @@
 				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))
      
-     (:div :id "myModal" :class "modal bottom-sheet" 
+     (:div :id "myModal" :class "modal" 
 	   (:div :class "modal-content"
 		 (:h4 "Switch Pictures")
 		 (dolist (img ,full-images)
 		   (htm
-		    (:div :class "col s12 m3 l3"
+		    (:div :class "col s12 m6 l6"
+			  (:div :class "card"
+				(:div :class "card-content"
 			  (:form :action "/swapitemposition"
 				 :method "POST"
 				 (:input :type "hidden" :id "image-name"
 					 :name "image-name" :value img)
 				 (:input :type "image" :id "saveform" :class "img-responsive"
 					 :width "100%" :height "50%" :src img
-					 :alt "Submit Form"))))))
+					 :alt "Submit Form")))
+				(:div :class "card-action"
+				      (:a :id "modalButton2" :class "dropdown-button btn" :href "#" :data-activates "dropdown2" "Multi-Pic")))))))
 	   (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
 
 (defmacro standard-order-intro ()
@@ -913,44 +921,53 @@
 		 (:label :for "myInput" :class "black-text" "Search")
 		 (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
 	   (:script :src "plugins/search.js")
-
-	   
+	   (:script :src "js/modal-add.js")
+	   (:ul :id "dropdown2" :class "dropdown-content"
+		(dolist (item (invoice-item-list ,invoice))
+		  (htm
+		   (:li (:a :id (db-item-desc item) :onclick (format nil "javascript:modalSwitch(\"~A\");" (db-item-desc item)) (fmt "~A" (db-item-desc item)))))))
 	   (:div :id "itemlist"
 		 (:ul :id "myUL"     
-		 (dolist (item (invoice-item-list ,invoice))
-		   (htm
-		    (:li
-		     (:div :class "col l3 m4 s6"
-			   (:div :class "card" :data-indicators "true"
-				
-				 (:div :class "card-image" (:div :class "carousel" (:a :class "carousel-item" :href "#one!" (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item)))))
-				
-				(:div :class "card-content"
-				      (:span :class "card-title truncate"
-					     (fmt "~A" (escape-string (db-item-desc item))))
-				      (:span
-				       (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
-				       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
-				(:div :class "card-action"
-				      (:form :class "form-inline"
-					     :action "/removeitem"
-					     :method "POST"
-					     :onclick (concatenate 'string "removeitem(\"" (db-item-desc item) "\")")
-					   
-					     :id (db-item-desc item)
-					     (:input :type "hidden" :value (db-item-desc item)
-						     :name "item" :id "item")
-					     (:input :type "hidden" :value (db-item-price item)
-						     :name "item-price" :id "item-price")
-					     (:input :type "hidden" :value (db-item-qty item)
-						     :name "item-quantity" :id "item-quantity")
-					     (:input :type "hidden" :value ,invoice
-						     :name "invoice" :id "invoice")
-					     (if (string= (item-returned-on item) "")
-						 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
-						 (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
-							       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-					     (:a :href "#" :class "btn-floating waves-effect weaves-light" :onclick "modal-add.js" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
+		      (dolist (item (invoice-item-list ,invoice))
+			(htm
+			 (:li
+			  (:div :class "col l3 m4 s6"
+				(:div :class "card" :data-indicators "true"
+				      (if (more-than-one item)
+					  (htm (:div :class "card-image"
+					    (:div :class "carousel"
+						  (:a :class "carousel-item" :href "#one!"
+						      (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item))))))
+					  (htm (:div :class "card-image"
+						     (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item)))))
+				      
+				      (:div :class "card-content"
+					    (:span :class "card-title truncate"
+						   (fmt "~A" (escape-string (db-item-desc item))))
+					    (:span
+					     (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
+					     (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
+				      (:div :class "card-action"
+					    (:form :class "form-inline"
+						   :action "/removeitem"
+						   :method "POST"
+						   :onclick (concatenate 'string "removeitem(\"" (db-item-desc item) "\")")
+						   
+						   :id (db-item-desc item)
+						   (:input :type "hidden" :value (db-item-desc item)
+							   :name "item" :id "item")
+						   (:input :type "hidden" :value (db-item-price item)
+							   :name "item-price" :id "item-price")
+						   (:input :type "hidden" :value (db-item-qty item)
+							   :name "item-quantity" :id "item-quantity")
+						   (:input :type "hidden" :value ,invoice
+							   :name "invoice" :id "invoice")
+						   (if (string= (item-returned-on item) "")
+						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
+						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
+								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
+						   (:button :id "modalButton":class "btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
+	   
 	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
 	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
 	   (:script "$('.carousel.carousel-slider').carousel({fullWidth: false});"))))
