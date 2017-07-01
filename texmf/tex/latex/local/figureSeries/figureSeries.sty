@@ -1,0 +1,148 @@
+%%
+%% This is file `figureSeries.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% figureSeries.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2014, 2015 by Thomas Weise <http://www.it-weise.de>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.3 of this license
+%% or (at your option) any later version. The latest version of this
+%% license is in:
+%% 
+%%     http://www.latex-project.org/lppl.txt
+%% 
+%%  You can obtain the latest version of this package from
+%% 
+%%     http://github.com/thomasWeise/figureSeries
+%% 
+%%  This work is author-maintained, i.e., it can only be maintained by
+%%  Thomas Weise.
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{figureSeries}
+    [2015/07/13 v0.9.4 Provides a floating, figure*-like construct that can break over multiple pages]
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Preamble %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+\newif\if@figSer@captionCompatibilityFalse%
+\@figSer@captionCompatibilityFalsefalse%
+\ifx\spnewtheorem\@undefined%
+\else%
+\@figSer@captionCompatibilityFalsetrue%
+\fi%
+\if@figSer@captionCompatibilityFalse%
+\RequirePackage[compatibility=false]{caption}%
+\else%
+\RequirePackage{caption}%
+\fi%
+\RequirePackage{subcaption}%
+\DeclareCaptionSubType*[arabic]{figure}%
+\RequirePackage{afterpage}%
+\RequirePackage{cuted}%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% User Interface %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%
+%% Insert an element of the figure series, i.e., a sub-figure.
+%% #1 the caption of the sub-figure, potentially including a |\label|
+%% #2 the contents of the sub-figure, likely a call to |\includegraphicx|
+\long\gdef\figureSeriesElement#1#2{%
+\strut\hfill\strut%
+\edef\@captype{figure}%
+\subcaptionbox{#1}{#2}%
+\strut\hfill\strut%
+}%
+%%
+%% Insert a row of sub-figures into the figure series.
+%% #1 the contents of the rows: arbitrarily many calls to |\figureSeriesElement|
+\long\gdef\figureSeriesRow#1{%
+\begin{center}%
+\ifx\@figSer@delayedCaption\@empty%
+\vspace\abovecaptionskip%
+\strut#1\strut%
+\else%
+\parbox[b]{\textwidth}{%
+\@figSer@delayedCaption%
+\global\let\@figSer@delayedCaption\@empty%
+\vspace\abovecaptionskip%
+\strut#1\strut%
+}%
+\fi%
+\end{center}%
+}%
+%%
+%% Insert a figure series right here, i.e., at the location at which this
+%% function is called.
+%% Exceptions: This function will behave like \figureSeriesFloat if 1. a
+%% floating figure series already pending and 2. in two-column documents.
+%% #1 the caption of the figure series, potentially including a |\label|
+%% #2 the contents of the figure series: arbitrarily many calls to
+%%    |\figureSeriesRow|
+\long\def\figureSeriesHere#1#2{%
+\ifx\@figSer@floatingBody\@empty%
+\if@twocolumn%
+\@figSer@store{#1}{#2}%
+\afterpage{\@figSer@deferred}%
+\else%
+\@figSer@print{#1}{#2}%
+\fi%
+\else%
+\@figSer@store{#1}{#2}%
+\fi%
+}%
+%%
+%% Insert a floating figure series right here, i.e., one which will be
+%% laid out on top of the following page.
+%% #1 the caption of the figure series, potentially including a |\label|
+%% #2 the contents of the figure series: arbitrarily many calls to
+%%    |\figureSeriesRow|
+\long\gdef\figureSeriesFloat#1#2{%
+\ifx\@figSer@floatingBody\@empty%
+\@figSer@store{#1}{#2}%
+\afterpage{\@figSer@deferred}%
+\else%
+\@figSer@store{#1}{#2}%
+\fi%
+}%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Internal Macros %%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+\global\let\@figSer@floatingBody\@empty%
+\global\let\@figSer@delayedCaption\@empty%
+\long\def\@figSer@print#1#2{%
+\def\@figSer@delayedCaption{%
+\noindent\parbox{\textwidth}{%
+\captionof{figure}{#1}%
+\global\advance\c@figure by 0%
+}%
+\par}%
+\begin{center}%
+#2%
+\end{center}%
+\medskip%
+}%
+\long\def\@figSer@store#1#2{%
+\g@addto@macro{\@figSer@floatingBody}{\@figSer@print{#1}{#2}}%
+}%
+\def\@figSer@deferred{%
+\if@twocolumn%
+\if@firstcolumn%
+\begin{strip}\@figSer@floatingBody\end{strip}\null\par%
+\global\let\@figSer@floatingBody\@empty%
+\else%
+\afterpage{\@figSer@deferred}%
+\fi%
+\else%
+\@figSer@floatingBody%
+\global\let\@figSer@floatingBody\@empty%
+\fi%
+}%
+\endinput
+%%
+%% End of file `figureSeries.sty'.
