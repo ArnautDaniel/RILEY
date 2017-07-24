@@ -390,6 +390,18 @@
 	(reduce #'web-math-add (mapcar #'partial-return-qty partial-list))
 	"0")))
 
+(define-easy-handler (multi-pic :uri "/multi-pic") (item)
+  (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 (images (prepare-for-table (cl-fad:list-directory
+				     (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
+	 (change-pic-cookie (cookie-in "current-picture"))
+	 (images-filtered (filter-already-in-itemlist images invoice)))
+					 
+    (standard-page (:title "Multi Picture Add")
+      (:navbar (test-navbar))
+      (standard-multi-pic :image (first images-filtered)
+			  :full-images  images-filtered))))
+    
 (define-easy-handler (multi-pic-add :uri "/multi-pic-add") (qty desc price pic)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item-r (find-item-db :price price :quantity qty :description desc :invoice (mito:find-dao 'invoice-db
@@ -748,6 +760,21 @@
     ((> (length lst) 1) (list (list (car lst) (cadr lst)) (pair-off (cddr lst))))
     ((<= (length lst) 1) (list (car lst) '()))))
 
+(defmacro standard-multi-pic (&key image full-images)
+  `(with-html-output (*standard-output* nil :indent t)
+     (:div :class "section"
+	   (:div :class "row"
+	   (dolist (img ,full-images)
+	     (htm
+	      (:div :class "col s12 m6 l6"
+		    (:div :class "card"
+			  (:div :class "card-image"
+				(:img  :src (escape-string (concatenate 'string img)) :class "materialboxed"))
+			  (:div :class "card-action"
+				(:form :action "#"
+				       (:p
+					(:input :type "checkbox" :id img)
+					(:label :for img "Select"))))))))))))
 
 ;;;gensym portion probably needs to be changed
 (defmacro standard-item-writeup (&key image full-images)
@@ -970,7 +997,7 @@
 						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" (:i :class "material-icons" "remove_circle")))
 						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
 								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-						   (:button :id (db-item-desc item) :class "modal-trigger btn-floating waves-effect weaves-light" :data-target "myModal" :onclick "modalButtonOpen(this.id)" (:i :class "material-icons" "content_copy")))))))))))
+						   (:a :href (format nil "multi-pic?item=~a" (db-item-desc item)) (:i :class "material-icons" "content_copy")))))))))))
 	   
 	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
 	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
