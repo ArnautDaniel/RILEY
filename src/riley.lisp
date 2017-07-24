@@ -68,7 +68,13 @@
 	 :accessor db-multi-item)
    (picture :initarg :picture
 	    :accessor multi-picture
-	    :col-type :text))
+	    :col-type :text)
+   (show :initarg :show
+	 :accessor multi-show
+	 :col-type :text)
+   (set :initarg :set
+	:accessor multi-set
+	:col-type :text))
   (:metaclass mito:dao-table-class))
 
 (defclass user-db ()
@@ -186,11 +192,16 @@
 				      :test #'string=) invoice)))
 
 (defun filter-multi-pic (images invoice)
-  (let ((itemlist (mito:retrieve-dao 'multi-pic :item (find-item-db :invoice (mito:find-dao 'invoice-db  :set-name (db-set-name invoice))))))
+  (if (invoice-item-list invoice)
+      (let ((itemlist (mito:retrieve-dao 'multi-pic :set (db-set-name invoice)
+					 :show (db-show-name (invoice-show invoice)))))
+ 
     (set-difference images (mapcar #'(lambda (x)
 				       (multi-picture x))
 				   itemlist)
-		    :test #'string=)))
+		    :test #'string=))
+  images))
+
 ;;;Helper function for grabbing image location
 (defun itemlist-image-location (invoice)
   (mapcar #'(lambda (x)
@@ -224,7 +235,7 @@
 				      (db-show-name (invoice-show  current-invoice))
 				      "-"
 				      image-name
-				      ".jpg")))      
+				      )))      
       (cl-fad:copy-file (make-pathname :directory temp-image-directory
 				       :name image-name)
 			(make-pathname :directory (concatenate 'string invoice-location "webimg/")
@@ -431,10 +442,13 @@
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item-r (find-item-db :price price :quantity qty :description desc :invoice (mito:find-dao 'invoice-db
 												    :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
-												    :set-name (db-set-name invoice)))))
+												    :set-name (db-set-name invoice))))
+	 (show-name (db-show-name (invoice-show invoice))))
     (mito:create-dao 'multi-pic
 		     :item-db item-r
-		     :picture pic)))
+		     :picture pic
+		     :set (db-set-name invoice)
+		     :show show-name)))
 
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
   (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
