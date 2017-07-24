@@ -1,6 +1,8 @@
-$(function modalSwitch(item) {
-    $("[id='" + item + "']").first().click(function(event){
-	event.preventDefault();
-	alert("Hello");
-    });	
+$(function(){
+   
+    $("#modalButton").click(function(){
+	$("#modalText").text("Add pictures to " + $(this).parent().attr("id"));
+	if (!document.getElementById("modalAlive")){ $("#modalFoot").append($('<input id="modalAlive" class="btn" type="button" value="Submit Multi-Pic"/>')); };
+	
+});
 });

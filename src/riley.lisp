@@ -846,15 +846,15 @@
 					 (:li (:a :href (format nil "rotate-image?image=~a"
 								,image)
 						  :class "red-text" (:i :class "material-icons" "rotate_right") "Rotate Right")))
-				    (:button :type "button" :class "red darken-4 btn waves-effect waves-light"
+				    (:button :type "button" :class "modal-trigger red darken-4 btn waves-effect waves-light"
 					     :data-target "myModal" "Switch")))))))
      
      (:div :id "myModal" :class "modal" 
 	   (:div :class "modal-content"
-		 (:h4 "Switch Pictures")
+		 (:h4 :id "modalText" "Switch Pictures")
 		 (dolist (img ,full-images)
 		   (htm
-		    (:div :class "col s12 m6 l6"
+		    (:div :id "modalPics" :class "col s12 m6 l6"
 			  (:div :class "card"
 				(:div :class "card-content"
 			  (:form :action "/swapitemposition"
@@ -865,7 +865,11 @@
 					 :width "100%" :height "50%" :src img
 					 :alt "Submit Form")))
 				(:div :class "card-action"
-				      (:a :id "modalButton2" :class "dropdown-button btn" :href "#" :data-activates "dropdown2" "Multi-Pic")))))))
+				      (:form :action "#"
+					     (:p
+					      (:input :type "checkbox" :id "modalCheck")
+					      (:label :for "modalCheck" "Select"))))))
+				(:div :id "modalFoot" :class "modal-footer"))))
 	   (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
 
 (defmacro standard-order-intro ()
@@ -963,10 +967,10 @@
 						   (:input :type "hidden" :value ,invoice
 							   :name "invoice" :id "invoice")
 						   (if (string= (item-returned-on item) "")
-						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" "Remove"))
+						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" (:i :class "material-icons" "remove_circle")))
 						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
 								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-						   (:button :id "modalButton":class "btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
+						   (:button :id "modalButton":class "modal-trigger btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
 	   
 	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
 	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
