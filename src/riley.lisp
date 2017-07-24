@@ -182,9 +182,15 @@
 ;;;before sending it to the write-order page
 (defun filter-already-in-itemlist (images invoice)
   (let ((itemlist (itemlist-image-location invoice)))
-    (set-difference images itemlist
-		    :test #'string=)))
+    (filter-multi-pic (set-difference images itemlist
+				      :test #'string=) invoice)))
 
+(defun filter-multi-pic (images invoice)
+  (let ((itemlist (mito:retrieve-dao 'multi-pic :item (find-item-db :invoice (mito:find-dao 'invoice-db  :set-name (db-set-name invoice))))))
+    (set-difference images (mapcar #'(lambda (x)
+				       (multi-picture x))
+				   itemlist)
+		    :test #'string=)))
 ;;;Helper function for grabbing image location
 (defun itemlist-image-location (invoice)
   (mapcar #'(lambda (x)
@@ -390,27 +396,45 @@
 	(reduce #'web-math-add (mapcar #'partial-return-qty partial-list))
 	"0")))
 
-(define-easy-handler (multi-pic :uri "/multi-pic") (item)
+(define-easy-handler (multi-pic :uri "/multi-pic") (item price qty)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (images (prepare-for-table (cl-fad:list-directory
 				     (concatenate 'string (invoice-root-dir invoice) "webimg/"))))
-	 (change-pic-cookie (cookie-in "current-picture"))
+	 (invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
+	 
 	 (images-filtered (filter-already-in-itemlist images invoice)))
-					 
+    
     (standard-page (:title "Multi Picture Add")
       (:navbar (test-navbar))
-      (standard-multi-pic :image (first images-filtered)
+      (standard-multi-pic :item-desc item
+			  :item-price price
+			  :item-qty qty
 			  :full-images  images-filtered))))
-    
-(define-easy-handler (multi-pic-add :uri "/multi-pic-add") (qty desc price pic)
+
+(define-easy-handler (multi-pic-handler :uri "/multi-pic-handler") ()
+  (let ((multi-pic-list (loop for post-parameter in (hunchentoot:post-parameters*)
+			   if (equal (car post-parameter) "checkbox[]")
+			   collect post-parameter))
+	(item-desc (hunchentoot:post-parameter "itemdesc"))
+	(item-price (hunchentoot:post-parameter "itemprice"))
+	(item-qty (hunchentoot:post-parameter "itemqty")))
+    (standard-page (:title "Multi-pic-handler")
+      (mapc #'(lambda (x)
+		(format t "~A ~a<br>" x (escape-string item-desc))
+	        (multi-pic-add item-qty item-desc item-price (cdr x)))
+	    multi-pic-list)))
+  (redirect "/setthemcookies"))
+
+
+
+(defun multi-pic-add (qty desc price pic)
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item-r (find-item-db :price price :quantity qty :description desc :invoice (mito:find-dao 'invoice-db
 												    :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
 												    :set-name (db-set-name invoice)))))
     (mito:create-dao 'multi-pic
 		     :item-db item-r
-		     :picture pic)
-    (redirect "/setthemcookies")))
+		     :picture pic)))
 
 (define-easy-handler (partial-check-in :uri "/partial-check-in") (qty desc price)
   (let* ((rtn (escape-string (hunchentoot:post-parameter "ranged")))
@@ -760,21 +784,30 @@
     ((> (length lst) 1) (list (list (car lst) (cadr lst)) (pair-off (cddr lst))))
     ((<= (length lst) 1) (list (car lst) '()))))
 
-(defmacro standard-multi-pic (&key image full-images)
+(defmacro standard-multi-pic (&key full-images item-desc item-price item-qty)
   `(with-html-output (*standard-output* nil :indent t)
      (:div :class "section"
-	   (:div :class "row"
-	   (dolist (img ,full-images)
-	     (htm
-	      (:div :class "col s12 m6 l6"
-		    (:div :class "card"
-			  (:div :class "card-image"
-				(:img  :src (escape-string (concatenate 'string img)) :class "materialboxed"))
-			  (:div :class "card-action"
-				(:form :action "#"
-				       (:p
-					(:input :type "checkbox" :id img)
-					(:label :for img "Select"))))))))))))
+	   (:form :action "/multi-pic-handler"
+		  :method "POST"
+		  (:input :type "hidden" :name "itemdesc" :id "itemdesc" :value ,item-desc)
+		  (:input :type "hidden" :name "itemprice" :id "itemprice" :value ,item-price)
+		  (:input :type "hidden" :name "itemqty" :id "itemqty" :value ,item-qty)
+		  
+		  (:div :class "row"
+			(dolist (img ,full-images)
+			  (htm
+			   (:div :class "col s12 m6 l6"
+				 (:div :class "card"
+				       (:div :class "card-image"
+					     (:img  :src (escape-string (concatenate 'string img)) :class "materialboxed"))
+				       (:div :class "card-action"
+					     (:p
+					      (:input :type "checkbox" :id img :value img :name "checkbox[]")
+					      (:label :for img "Select"))
+					     (:input :type "hidden" :id img
+						     :name img :value img)
+					     (:button :type "submit" :class "btn" "Submit")))))))))))
+
 
 ;;;gensym portion probably needs to be changed
 (defmacro standard-item-writeup (&key image full-images)
@@ -884,19 +917,19 @@
 		    (:div :id "modalPics" :class "col s12 m6 l6"
 			  (:div :class "card"
 				(:div :class "card-content"
-			  (:form :action "/swapitemposition"
-				 :method "POST"
-				 (:input :type "hidden" :id "image-name"
-					 :name "image-name" :value img)
-				 (:input :type "image" :id "saveform" :class "img-responsive"
-					 :width "100%" :height "50%" :src img
-					 :alt "Submit Form")))
+				      (:form :action "/swapitemposition"
+					     :method "POST"
+					     (:input :type "hidden" :id "image-name"
+						     :name "image-name" :value img)
+					     (:input :type "image" :id "saveform" :class "img-responsive"
+						     :width "100%" :height "50%" :src img
+						     :alt "Submit Form")))
 				(:div :class "card-action"
 				      (:form :action "#" :id "modalCheck"
 					     (:p
 					      (:input :type "checkbox" :id img)
 					      (:label :for img "Select"))))))
-				(:div :id "modalFoot" :class "modal-footer"))))
+		    (:div :id "modalFoot" :class "modal-footer"))))
 	   (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
 
 (defmacro standard-order-intro ()
@@ -944,64 +977,74 @@
 					  :class "btn-flat waves-effect red-text text-darken-4" "Invoice"))))))))))
 
 (defmacro standard-item-list-table (&key invoice)
-  `(with-html-output (*standard-output* nil :indent t)
-     
-     (:div :class "row"
-	   (:script :src "plugins/scrollfire.js")
-	   (:div :class "input-field"
-		 (:label :for "myInput" :class "black-text" "Search")
-		 (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
-	   (:script :src "plugins/search.js")
-	   (:script :src "js/modal-add.js")
-	   (:ul :id "dropdown2" :class "dropdown-content"
-		(dolist (item (invoice-item-list ,invoice))
-		  (htm
-		   (:li (:a :id (db-item-desc item) :onclick (format nil "javascript:modalSwitch(\"~A\");" (db-item-desc item)) (fmt "~A" (db-item-desc item)))))))
-	   (:div :id "itemlist"
-		 (:ul :id "myUL"     
-		      (dolist (item (invoice-item-list ,invoice))
-			(htm
-			 (:li
-			  (:div :class "col l3 m4 s6"
-				(:div :class "card" :data-indicators "true"
-				      (if (more-than-one item)
-					  (htm (:div :class "card-image"
-					    (:div :class "carousel"
-						  (:a :class "carousel-item" :href "#one!"
-						      (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item))))))
-					  (htm (:div :class "card-image"
-						     (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item)))))
-				      
-				      (:div :class "card-content"
-					    (:span :class "card-title truncate"
-						   (fmt "~A" (escape-string (db-item-desc item))))
-					    (:span
-					     (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
-					     (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
-				      (:div :class "card-action"
-					    (:form :class "form-inline"
-						   :action "/removeitem"
-						   :method "POST"
-						   :onclick (concatenate 'string "removeitem(\"" (db-item-desc item) "\")")
-						   
-						   :id (db-item-desc item)
-						   (:input :type "hidden" :value (db-item-desc item)
-							   :name "item" :id "item")
-						   (:input :type "hidden" :value (db-item-price item)
-							   :name "item-price" :id "item-price")
-						   (:input :type "hidden" :value (db-item-qty item)
-							   :name "item-quantity" :id "item-quantity")
-						   (:input :type "hidden" :value ,invoice
-							   :name "invoice" :id "invoice")
-						   (if (string= (item-returned-on item) "")
-						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" (:i :class "material-icons" "remove_circle")))
-						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
-								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-						   (:a :href (format nil "multi-pic?item=~a" (db-item-desc item)) (:i :class "material-icons" "content_copy")))))))))))
-	   
-	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
-	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
-	   (:script "$('.carousel.carousel-slider').carousel({fullWidth: false});"))))
+`(with-html-output (*standard-output* nil :indent t)
+   
+   (:div :class "row"
+	 (:script :src "plugins/scrollfire.js")
+	 (:div :class "input-field"
+	       (:label :for "myInput" :class "black-text" "Search")
+	       (:input :type "text" :id "myInput" :onkeyup "myFunction()" :class "black-text"))
+	 (:script :src "plugins/search.js")
+	 (:script :src "js/modal-add.js")
+	 (:ul :id "dropdown2" :class "dropdown-content"
+	      (dolist (item (invoice-item-list ,invoice))
+		(htm
+		 (:li (:a :id (db-item-desc item) :onclick (format nil "javascript:modalSwitch(\"~A\");" (db-item-desc item)) (fmt "~A" (db-item-desc item)))))))
+	 (:div :id "itemlist"
+	       (:ul :id "myUL"     
+		    (dolist (item (invoice-item-list ,invoice))
+		      (htm
+		       (:li
+			(:div :class "col s12 l6 m6"
+			 (:div :class "card" :data-indicators "true"
+			(if (more-than-one item)
+			    (htm
+			   
+				  
+					 (:div :class "card-image"
+					       (:div :class "carousel"
+						     (:a :class "carousel-item" :href "#one!"
+							 (:img :src (item-picture item) :class "responsive-img" :data-caption (db-item-desc item)))
+						     (dolist (multi (mito:retrieve-dao 'multi-pic :item (find-item-db :description (db-item-desc item) :quantity (db-item-qty item) :price (db-item-price item))))
+						       (htm (:a :class "carousel-item"
+								:href "#"
+								(:img :src (multi-picture multi) :class "responsive-img materialboxed" :data-caption (db-item-desc item))))))))
+			    (htm
+			    
+				  
+					 (:div :class "card-image"
+					       (:img :src (item-picture item) :class "responsive-img materialboxed" :data-caption (db-item-desc item)))))
+			
+			(:div :class "card-content"
+			      (:span :class "card-title truncate"
+				     (fmt "~A" (escape-string (db-item-desc item))))
+			      (:span
+			       (:i :class "material-icons" "attach_money") (fmt " ~A &emsp;" (escape-string (db-item-price item)))
+			       (:a :href "#" :class "right black-text" (:i :class "material-icons" "all_inclusive") (fmt " ~A" (escape-string (db-item-qty item))))))
+			(:div :class "card-action"
+			      (:form :class "form-inline"
+				     :action "/removeitem"
+				     :method "POST"
+				     :onclick (concatenate 'string "removeitem(\"" (db-item-desc item) "\")")
+				     
+				     :id (db-item-desc item)
+				     (:input :type "hidden" :value (db-item-desc item)
+					     :name "item" :id "item")
+				     (:input :type "hidden" :value (db-item-price item)
+					     :name "item-price" :id "item-price")
+				     (:input :type "hidden" :value (db-item-qty item)
+					     :name "item-quantity" :id "item-quantity")
+				     (:input :type "hidden" :value ,invoice
+					     :name "invoice" :id "invoice")
+				     (if (string= (item-returned-on item) "")
+					 (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" (:i :class "material-icons" "remove_circle")))
+					 (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
+						       (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
+				     (:a :href (format nil "multi-pic?item=~a&qty=~a&price=~a" (db-item-desc item) (db-item-qty item) (db-item-price item)) (:i :class "material-icons" "content_copy"))))))))))))
+
+(:script "$(document).ready(function(){ $('.carousel').carousel();});")
+(:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
+(:script "$('.carousel.carousel-slider').carousel({fullWidth: false});")))
 
 (defmacro standard-check-in (&key invoice)
   `(with-html-output (*standard-output* nil :indent t)
