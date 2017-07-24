@@ -850,7 +850,7 @@
 					     :data-target "myModal" "Switch")))))))
      
      (:div :id "myModal" :class "modal" 
-	   (:div :class "modal-content"
+	   (:div :class "modal-content" :id "modal-content"
 		 (:h4 :id "modalText" "Switch Pictures")
 		 (dolist (img ,full-images)
 		   (htm
@@ -865,10 +865,10 @@
 					 :width "100%" :height "50%" :src img
 					 :alt "Submit Form")))
 				(:div :class "card-action"
-				      (:form :action "#"
+				      (:form :action "#" :id "modalCheck"
 					     (:p
-					      (:input :type "checkbox" :id "modalCheck")
-					      (:label :for "modalCheck" "Select"))))))
+					      (:input :type "checkbox" :id img)
+					      (:label :for img "Select"))))))
 				(:div :id "modalFoot" :class "modal-footer"))))
 	   (:script "$(document).ready(function(){ $('.modal').modal(); });"))))
 
@@ -970,7 +970,7 @@
 						       (htm (:button :type "submit" :class "red darken-4 btn btn-default btn-sm btn-danger" (:i :class "material-icons" "remove_circle")))
 						       (htm (:button :type "submit" :class "btn black-text disabled" :disabled "true"
 								     (fmt "RTN'D ~A" (escape-string (item-returned-on item))))))
-						   (:button :id "modalButton":class "modal-trigger btn-floating waves-effect weaves-light" :data-target "myModal" (:i :class "material-icons" "content_copy")))))))))))
+						   (:button :id (db-item-desc item) :class "modal-trigger btn-floating waves-effect weaves-light" :data-target "myModal" :onclick "modalButtonOpen(this.id)" (:i :class "material-icons" "content_copy")))))))))))
 	   
 	   (:script "$(document).ready(function(){ $('.carousel').carousel();});")
 	   (:script "$(document).ready(function(){ $('.materialboxed').materialbox();});")
