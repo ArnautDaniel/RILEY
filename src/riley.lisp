@@ -104,6 +104,9 @@
 (defun invoice-item-list (invoice)
   (mito:retrieve-dao 'item-db :invoice invoice))
 
+(defun item-multi-list (item)
+  (mito:retrieve-dao 'multi-pic :item item))
+
 (defun find-show-db (&rest args)
   (apply #'mito:find-dao 'show-db args))
 
@@ -1271,7 +1274,7 @@ Atlanta, Georgia 30310 \\hfill caps@capsga.com
       (mapc (lambda (b) (princ (format-picture b) s)
 		    (fresh-line s)
 		    (fresh-line s))
-	    (picture-list (invoice-item-list invoice)))
+	    (picture-list (add-multi-pic-to-lst (invoice-item-list invoice))))
       (princ end-img-table s)
       (princ end-document s))
 
@@ -1315,13 +1318,21 @@ Atlanta, Georgia 30310 \\hfill caps@capsga.com
       (subseq (item-picture b)
 	      (+ (search "webimg" (item-picture b)) 7))))
 
+(defun subseq-multi-img (b)
+  (if (null b)
+      ""
+      (subseq (multi-picture b)
+	      (+ (search "webimg" (multi-picture b)) 7))))
+
 (defun subseq-img-path (b)
   (if (null b)
       ""
       (subseq b
 	      (+ (search "webimg" b) 7))))
+
 ;;;I know this is ugly as sin.  I'm tired
 ;;;I'll fix it in a little bit.
+;;;You never fixed it, you liar
 
 (defun format-picture (b)
   (concatenate 'string
@@ -1332,13 +1343,20 @@ Atlanta, Georgia 30310 \\hfill caps@capsga.com
 	       "}"))
 
 (defun picrow-format (a)
-  (if (null a)
-      ""
-      (concatenate 'string "\\figureSeriesElement{"
-		   (db-item-desc a)
+  (cond
+    ((null a)
+     "")
+    
+    ((is-a-item a) (concatenate 'string "\\figureSeriesElement{"
+				(db-item-desc a)
 		   "}{\\resizebox{0.3\\linewidth}{5cm}{\\includegraphics{"
 		   (subseq-img a)
-		   "}}}")))
+		   "}}}"))
+    ((is-a-multi-pic a)
+     (concatenate 'string "\\figureSeriesElement{"
+		  (db-item-desc (db-multi-item a))
+		  "}{\\resizebox{0.3\\linewidth}{5cm}{\\includegraphics{"
+		  (subseq-multi-img a) "}}}"))))
 
 (defun picture-list (b)
   (cond
@@ -1346,3 +1364,20 @@ Atlanta, Georgia 30310 \\hfill caps@capsga.com
     (t
      (cons (list (car b) (cadr b) (third b)) (picture-list (cdddr b))))))
 
+(defun flatten (L)
+    (if (null L)
+        nil
+        (if (atom (first L))
+            (cons (first L) (flatten (rest L)))
+            (append (flatten (first L)) (flatten (rest L))))))
+
+(defun is-a-item (x)
+  (typep x 'item-db))
+
+(defun is-a-multi-pic (x)
+  (typep x 'multi-pic))
+
+(defun add-multi-pic-to-lst (item-lst)
+  (flatten (mapcar #'(lambda (x)
+	      (cons x (item-multi-list x)))
+	  item-lst)))
