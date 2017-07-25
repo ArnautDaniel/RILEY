@@ -375,17 +375,20 @@
   (let* ((invoice (find-invoice-from-cookie (cookie-in "current-invoice")))
 	 (item (hunchentoot:post-parameter "item"))
 	 (item-price (hunchentoot:post-parameter "item-price"))
-	 (item-quantity (hunchentoot:post-parameter "item-quantity")))
-    
-    
-    (mito:delete-dao  (find-item-db
+	 (item-quantity (hunchentoot:post-parameter "item-quantity"))
+	 (item-obj  (find-item-db
 		       :description item
 		       :quantity item-quantity
 		       :price item-price
 		       :invoice (mito:find-dao 'invoice-db
 					       :show (mito:find-dao 'show-db :name (db-show-name (invoice-show invoice)))
 					       :set-name (db-set-name invoice))))
-    (redirect "/setthemcookies")))
+	 (multi-pic-list (mito:retrieve-dao 'multi-pic :item-id (mito:object-id item-obj))))
+    (mapcar #'(lambda (x)
+		(mito:delete-dao x))
+	    multi-pic-list)
+    (mito:delete-dao item-obj))
+  (redirect "/setthemcookies"))
 
 (defmacro web-math (&key func a b)
   `(write-to-string (,func (parse-integer ,a) (parse-integer ,b))))
