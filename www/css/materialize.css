@@ -4721,6 +4721,7 @@ small {
   transition: box-shadow .25s;
   transition: box-shadow .25s, -webkit-box-shadow .25s;
   border-radius: 2px;
+  
 }
 
 .card .card-title {
@@ -4842,8 +4843,28 @@ small {
   top: 0;
   bottom: 0;
   width: 100%;
+
+}
+.flex-container {
+    display: -webkit-flex;
+    display: flex;
+    width: 400px;
+    height: 250px;
+    background-color: lightgrey;
 }
 
+.flex-item {
+
+    height: 300px;
+    margin: 10px;
+}
+
+
+.card-wrap {
+    flex: 0 0 33.333%;
+    display: flex;
+    padding: 10px; /* gutter width */
+}
 .card .card-image .card-title {
   color: #fff;
   position: absolute;
