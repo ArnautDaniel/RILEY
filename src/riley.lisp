@@ -459,15 +459,15 @@
                            if (equal (car post-parameter) "checkbox[]")
                            collect post-parameter)))
     (standard-page (:title "Multi-pic-check-in")
-                           (mapc #'(lambda (x)
-                                     (multi-pic-check id (cdr x)))
-                                 multi-pic-list)))
+      (mapc #'(lambda (x)
+                (multi-pic-check id (cdr x)))
+            multi-pic-list)))
   (redirect "/check-in-set"))
 
 (defun multi-pic-check (id lam)
   (let* 
-         ((item-r (find-item-db :id id))
-         (mp (mito:find-dao 'multi-pic :picture lam :item item-r)))
+      ((item-r (find-item-db :id id))
+       (mp (mito:find-dao 'multi-pic :picture lam :item item-r)))
     (setf (slot-value mp 'check-in) "yes")
     (mito:save-dao mp)))
 
@@ -1106,33 +1106,35 @@
                 (dolist (item (remove-returned (invoice-item-list ,invoice)))
                   (htm
                    (:li
-                    (:div :class "col s12 m4 l4"
+                    (:div :class "col s12 m5 l5"
                           (:div :class "card medium blue-grey" :data-indicators "true"
                                 (if (more-than-one item)
                                     (htm
                                      (:div :class "card-image"
-                                           (:img :src (item-picture item) :class "materialboxed responsive-img" :data-caption (db-item-desc item))
-                                           (:span :class "card-title truncate"                
-                                                  (:a :class "waves-effect waves-light btn modal-trigger center" :href (concatenate 'string "#" (db-item-desc item)) "Open Multipic Table")))
-                                     (:div :id (db-item-desc item) :class "modal"
-                                           (:div :class "modal-content" :id "modal-content" (:h4 :id "modalText" (db-item-desc item))
-                                                 (:div :class "row"
-                                                       (:form :action (concatenate 'string "/multi-pic-check-in?id=" (write-to-string (mito:object-id item)))
-                                                              :method "POST"
-                                                 (dolist (img (mito:retrieve-dao 'multi-pic :item (find-item-db :id (mito:object-id item))))
-                                                   (htm
-                                                    (:div :id (concatenate 'string (db-item-desc item) "-pics") :class "col s12 m6 l6"
-                                                          (:div :class "card"
-                                                                (:div :class "card-image" (:img :src (multi-picture img) :class "materialboxed responsive-img" :data-caption (db-item-desc item)))
-                                                                (:div :class "card-action" 
-                                                                                                   (:input :type "hidden" :id "image-name"
-                                                                                                           :name "image-name" :value (multi-picture img))
-                                                                                                   (:p                                                                                   (:input :type "checkbox" :id (multi-picture img) :value (multi-picture img) :name "checkbox[]")
-                                                                                                                                                                                         (:label :for (multi-picture img) "Check-in"))
-                                                                                                   (if (multi-checked? (multi-check-in img))
-                                                                                                       (htm (:button :type "submit" :class "btn" :disabled "true" "Check-in"))
-                                                                                                       (htm (:button :type "submit" :class "btn" "Check-in")))))))))
-                                                 (:script "$(document).ready(function(){ $('.modal').modal(); });")))))
+                                           (:img :src (item-picture item) :class "materialboxed responsive-img" :data-caption (db-item-desc item)))
+                                     
+                                     (:div :id (db-item-desc item) :class "modal modal-fixed-footer"
+                                           (:form :action (concatenate 'string "/multi-pic-check-in?id=" (write-to-string (mito:object-id item)))
+                                                  :method "POST"
+                                                  (:div :class "modal-content" :id "modal-content" (:h4 :id "modalText" (escape-string(db-item-desc item)))
+                                                        
+                                                        (:div :class "row"
+                                                              
+                                                              (dolist (img (mito:retrieve-dao 'multi-pic :item (find-item-db :id (mito:object-id item))))
+                                                                (htm
+                                                                 (:div :id (concatenate 'string (db-item-desc item) "-pics") :class "col s12 m6 l6"
+                                                                       (:div :class "card"
+                                                                             (:div :class "card-image" (:img :src (multi-picture img) :class "materialboxed responsive-img" :data-caption (db-item-desc item)))
+                                                                             (:div :class "card-action" 
+                                                                                   (:input :type "hidden" :id "image-name"
+                                                                                           :name "image-name" :value (multi-picture img))
+                                                                                   (:p
+                                                                                    (if (not (multi-checked? (multi-check-in img)))
+                                                                                        (htm                                                                               (:input :type "checkbox" :id (multi-picture img) :value (multi-picture img) :name "checkbox[]")                                                                                   (:label :for (multi-picture img) "Check-in"))
+                                                                                        (htm (:p "Checked in already"))))))))))
+                                                        (:script "$(document).ready(function(){ $('.modal').modal(); });"))
+                                                  (:div :class "modal-footer"
+                                                        (:button :type "submit" :class "btn waves-effect red darken-4" "Check-in")))))
                                     (htm (:div :class "card-image"
                                                (:img :src (item-picture item) :class "materialboxed responsive-img" :data-caption (db-item-desc item))
                                                (:span :class "card-title truncate"
@@ -1159,7 +1161,8 @@
                                                :value (db-item-desc item)) 
                                        (:input :type "hidden" :name "item-qty" :id "item-qty"
                                                :value (db-item-qty item))
-                                       (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))			        
+                                       (:button :type "submit" :class "red darken-4 btn-floating waves-effect waves-light" (:i :class "material-icons" "check_circle"))			        (if (more-than-one item)
+                                                                                                                                                                                        (htm (:a :class "waves-effect waves-light btn modal-trigger btn-floating red darken-4" :href (concatenate 'string "#" (db-item-desc item)) (:i :class "material-icons" "widgets"))))
                                        (:a :class "right red darken-4 btn-floating activator" (:i :class "material-icons" "arrow_upward"))))
                                 
                                 (:div :class "card-reveal"
