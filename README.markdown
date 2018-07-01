@@ -1,5 +1,7 @@
 # Riley
 
+Riley has been superseded by work on a desktop client version in the hopes of gaining even more speed and lower memory usage than a browser can provide.
+
 ## Usage
 
 TO USE:
@@ -20,11 +22,11 @@ Then run (in-package :riley), (start-server #port-number)
 
 ## Author
 
-* Jack Lucas (silver@simonides.xyz)
+* Jack Lucas (silverbeard@protonmail.com)
 
 ## Copyright
 
-Copyright (c) 2017 Jack Lucas (silver@simonides.xyz)
+Copyright (c) 2017 Jack Lucas (silverbeard@protonmail.com)
 
 ## License
 
