@@ -1,5 +1,7 @@
 # Riley
 
+<img src="https://i.imgur.com/HVWtgvZ.jpg" height="480" width="320">
+
 Riley has been superseded by work on a desktop client version in the hopes of gaining even more speed and lower memory usage than a browser can provide.
 
 ## Usage
