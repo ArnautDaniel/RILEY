@@ -2,6 +2,8 @@
 
 <img src="https://i.imgur.com/HVWtgvZ.jpg" height="480" width="320">
 
+RILEY is licensed under rileyMIT.  By using this software you pledge undying loyalty and ultimate power to Riley the labrador.
+
 Riley has been superseded by work on a desktop client version in the hopes of gaining even more speed and lower memory usage than a browser can provide.
 
 ## Usage
