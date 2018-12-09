@@ -1272,10 +1272,10 @@
 \\break
 \\hrule % Horizontal line
 
-675 Metropolitan Parkway SW \\hfill \\emph{Mobile:} (661) 000-0000 \\\\
-Suite 5121 \\hfill{ \\emph{Office:} (470) 000-0000} \\\\
+12 Turner Field \\hfill \\emph{Mobile:} (000) 000-0000 \\\\
+APT000 \\hfill{ \\emph{Office:} (000) 000-0000} \\\\
 % Your address and contact information
-Atlanta, Georgia 30310 \\hfill caps@capsga.com
+Atlanta 30011 \\hfill email@email.org
 \\\\ \\\\
 {\\bf Invoice To:} \\\\ ")
 
