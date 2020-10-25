@@ -12,7 +12,7 @@ TO USE:
 
 Add figureSeries to ~/texmf
 
-https://github.com/Silverbeard00/figureSeries (Backup)
+https://github.com/arnautdaniel/figureSeries (Backup)
 
 https://github.com/thomasWeise/figureSeries (Original)
 
@@ -26,11 +26,11 @@ Then run (in-package :riley), (start-server #port-number)
 
 ## Author
 
-* Jack Lucas (silverbeard@protonmail.com)
+* Arnaut Daniel
 
 ## Copyright
 
-Copyright (c) 2017 Jack Lucas (silverbeard@protonmail.com)
+Copyright (c) 2017 Arnaut Daniel
 
 ## License
 
